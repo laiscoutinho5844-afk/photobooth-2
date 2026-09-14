@@ -6,28 +6,30 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="theme-color" content="#050505" />
+<meta name="theme-color" content="#ffffff" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
-<title>Photobooth</title>
+<title>fotasso</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
   :root{
-    --bg:#050505;
-    --surface:#17140f;
-    --surface-2:#221d15;
-    --accent:#ffc145;      /* âmbar/flash */
-    --accent-2:#ff5a36;    /* laranja energia */
-    --text:#f6f3ea;
-    --text-muted:#9c978a;
-    --ok:#7cc576;
+    --bg:#ffffff;
+    --ink:#171717;
+    --muted:#8c8c86;
+    --accent:#9eff1f;      /* verde da marca fotasso */
+    --accent-ink:#171717;
+    --surface:#f6f6f1;
+    --surface-2:#ecece4;
+    --ok:#2f9e44;
+    --warn:#c9740a;
     --danger:#e5484d;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{
     margin:0; padding:0; width:100%; height:100%; overflow:hidden;
-    background:var(--bg); color:var(--text);
+    background:var(--bg); color:var(--ink);
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   #app{position:fixed; inset:0; display:flex; flex-direction:column;}
@@ -36,63 +38,63 @@
   #topbar{
     position:absolute; top:0; left:0; right:0; z-index:20;
     display:flex; justify-content:space-between; align-items:center;
-    padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;
     pointer-events:none;
   }
   #topbar > *{pointer-events:auto;}
   .pill{
     display:flex; align-items:center; gap:6px;
-    background:rgba(0,0,0,.45); backdrop-filter:blur(6px);
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:999px; padding:8px 14px; font-size:13px; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--surface-2);
+    border-radius:999px; padding:7px 13px; font-size:12px; color:var(--muted);
   }
   .pill.ok{color:var(--ok);}
-  .pill.warn{color:var(--accent-2);}
-  .dot{width:8px;height:8px;border-radius:50%;background:currentColor;}
+  .pill.warn{color:var(--warn);}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .icon-btn{
-    width:40px;height:40px;border-radius:50%; border:1px solid rgba(255,255,255,.14);
-    background:rgba(0,0,0,.45); backdrop-filter:blur(6px); color:var(--text);
-    display:flex; align-items:center; justify-content:center; font-size:18px;
+    width:36px;height:36px;border-radius:50%; border:1px solid var(--surface-2);
+    background:var(--surface); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-size:16px;
   }
 
-  /* ---------- câmera ---------- */
-  #camWrap{position:relative; flex:1; overflow:hidden; background:#000;}
+  /* ---------- palco / câmera ---------- */
+  #stage{
+    position:relative; flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:0 5vw;
+  }
+  #camFrame{
+    position:relative; width:90vw; aspect-ratio:899/673;
+    border-radius:22px; overflow:hidden; background:#000;
+    box-shadow:0 8px 30px rgba(0,0,0,.12);
+  }
   video{
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
     transform:scaleX(-1);
   }
   #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:15;}
-
   #countdownNum{
     position:absolute; inset:0; z-index:12;
     display:flex; align-items:center; justify-content:center;
-    font-size:42vw; font-weight:800; color:#fff;
-    text-shadow:0 6px 40px rgba(0,0,0,.6);
+    font-size:26vw; font-weight:800; color:#fff;
+    text-shadow:0 6px 30px rgba(0,0,0,.55);
     opacity:0; transform:scale(.7);
     pointer-events:none;
   }
-  #shotBadge{
-    position:absolute; z-index:12; top:16px; left:50%; transform:translateX(-50%);
-    background:rgba(0,0,0,.5); border-radius:999px; padding:6px 16px; font-size:13px;
-    letter-spacing:.02em; color:var(--text-muted); display:none;
+  #logoPill{
+    position:absolute; z-index:14; top:10px; left:50%; transform:translateX(-50%);
+    background:#fff; border-radius:999px; padding:5px 14px;
+    box-shadow:0 3px 12px rgba(0,0,0,.18);
+    display:flex; align-items:center;
   }
+  #logoPill img{height:20px; width:auto; display:block;}
 
-  /* ---------- botão obturador ---------- */
-  #shutterWrap{
-    position:absolute; z-index:20; left:0; right:0; bottom:0;
-    display:flex; justify-content:center;
-    padding-bottom:calc(env(safe-area-inset-bottom,0px) + 30px);
-    padding-top:26px;
-    background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
-  }
+  /* ---------- botão obturador (estrela) ---------- */
   #shutter{
-    width:84px; height:84px; border-radius:50%;
-    background:var(--accent);
-    border:5px solid rgba(255,255,255,.85);
-    box-shadow:0 6px 26px rgba(255,193,69,.45);
+    position:fixed; z-index:20; right:3.2vw; top:50%; transform:translateY(-50%);
+    width:74px; height:74px; background:var(--ink); border:none;
+    clip-path:polygon(50.00% 0.00%, 61.28% 26.57%, 89.09% 18.83%, 75.35% 44.21%, 98.75% 61.13%, 70.33% 66.21%, 71.69% 95.05%, 50.00% 76.00%, 28.31% 95.05%, 29.67% 66.21%, 1.25% 61.13%, 24.65% 44.21%, 10.91% 18.83%, 38.72% 26.57%);
   }
-  #shutter:active{transform:scale(.93);}
-  #shutter[disabled]{opacity:.5;}
+  #shutter:active{transform:translateY(-50%) scale(.92);}
+  #shutter[disabled]{opacity:.4;}
 
   /* ---------- telas auxiliares ---------- */
   .screen{
@@ -101,47 +103,48 @@
     background:var(--bg); padding:24px; text-align:center; gap:16px;
   }
   .hidden{display:none !important;}
-  h1{font-size:20px; font-weight:700; margin:0;}
-  p{color:var(--text-muted); font-size:15px; line-height:1.5; margin:0; max-width:320px;}
+  h1{font-size:19px; font-weight:700; margin:0;}
+  p{color:var(--muted); font-size:14px; line-height:1.5; margin:0; max-width:320px;}
 
   .btn{
     appearance:none; border:none; border-radius:14px; padding:14px 22px;
-    font-size:15px; font-weight:600; color:#181510; background:var(--accent);
+    font-size:15px; font-weight:700; color:var(--accent-ink); background:var(--accent);
     min-width:220px;
   }
   .btn:active{transform:scale(.97);}
-  .btn.secondary{background:var(--surface-2); color:var(--text); border:1px solid rgba(255,255,255,.12);}
-  .btn.ghost{background:transparent; color:var(--text-muted); border:1px solid rgba(255,255,255,.14);}
+  .btn.secondary{background:var(--surface); color:var(--ink); border:1px solid var(--surface-2);}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--surface-2);}
   .btn[disabled]{opacity:.5;}
 
-  #stripPreview{max-width:78vw; max-height:52vh; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.5); background:#fff;}
+  #stripPreview{max-width:82vw; max-height:52vh; border-radius:10px; box-shadow:0 10px 34px rgba(0,0,0,.16); background:#fff;}
 
   .progressBar{width:240px; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
   .progressBar > div{height:100%; width:0%; background:var(--accent); transition:width .15s;}
 
   /* ---------- settings ---------- */
-  #settings{position:absolute; inset:0; z-index:40; background:rgba(0,0,0,.6); display:flex; align-items:flex-end;}
+  #settings{position:absolute; inset:0; z-index:40; background:rgba(0,0,0,.35); display:flex; align-items:flex-end;}
   #settings.hidden{display:none;}
   #settingsCard{
-    width:100%; background:var(--surface); border-radius:20px 20px 0 0;
+    width:100%; background:var(--bg); border-radius:20px 20px 0 0;
     padding:22px 20px calc(env(safe-area-inset-bottom,0px) + 22px); max-height:80vh; overflow:auto;
+    box-shadow:0 -8px 30px rgba(0,0,0,.15);
   }
   .field{margin-bottom:18px; text-align:left;}
-  .field label{display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;}
+  .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px;}
   .segmented{display:flex; gap:8px;}
   .segmented button{
-    flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.14);
-    background:var(--surface-2); color:var(--text-muted); font-size:13px;
+    flex:1; padding:10px; border-radius:10px; border:1px solid var(--surface-2);
+    background:var(--surface); color:var(--muted); font-size:13px;
   }
-  .segmented button.active{background:var(--accent); color:#181510; border-color:var(--accent);}
-  input[type=number]{
-    width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.14);
-    background:var(--surface-2); color:var(--text); font-size:15px;
+  .segmented button.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  input[type=number], input[type=text]{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--surface-2);
+    background:var(--surface); color:var(--ink); font-size:15px;
   }
   .row{display:flex; align-items:center; justify-content:space-between;}
-  .switch{width:46px; height:26px; border-radius:999px; background:var(--surface-2); position:relative; border:1px solid rgba(255,255,255,.14);}
+  .switch{width:46px; height:26px; border-radius:999px; background:var(--surface-2); position:relative; border:1px solid var(--surface-2);}
   .switch.on{background:var(--accent);}
-  .switch::after{content:"";position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .15s;}
+  .switch::after{content:"";position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 3px rgba(0,0,0,.25);}
   .switch.on::after{left:22px;}
 </style>
 </head>
@@ -153,21 +156,19 @@
       <span class="dot"></span>
       <span id="btPillText">Impressora não conectada</span>
     </button>
-    <div style="display:flex; gap:8px;">
-      <button id="gearBtn" class="icon-btn">⚙️</button>
+    <button id="gearBtn" class="icon-btn">⚙️</button>
+  </div>
+
+  <div id="stage">
+    <div id="camFrame">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="flash"></div>
+      <div id="countdownNum"></div>
+      <div id="logoPill"><img src="logo-fotasso.png" alt="fotasso" /></div>
     </div>
   </div>
 
-  <div id="camWrap">
-    <video id="video" autoplay playsinline muted></video>
-    <div id="flash"></div>
-    <div id="shotBadge"></div>
-    <div id="countdownNum"></div>
-  </div>
-
-  <div id="shutterWrap">
-    <button id="shutter" aria-label="Iniciar"></button>
-  </div>
+  <button id="shutter" aria-label="Iniciar"></button>
 
   <!-- tela: câmera indisponível -->
   <div id="screenCamError" class="screen hidden">
@@ -178,13 +179,13 @@
 
   <!-- tela: processando -->
   <div id="screenProcessing" class="screen hidden">
-    <h1>Revelando a tira…</h1>
+    <h1>Revelando sua foto…</h1>
     <div class="progressBar"><div id="processingBar"></div></div>
   </div>
 
   <!-- tela: revisão / impressão -->
   <div id="screenReview" class="screen hidden">
-    <img id="stripPreview" alt="Tira de fotos" />
+    <img id="stripPreview" alt="Foto" />
     <div id="reviewStatus"><p>Pronta!</p></div>
     <div id="driveStatus"></div>
     <div class="progressBar hidden" id="printProgressWrap"><div id="printProgressBar"></div></div>
@@ -277,6 +278,25 @@
   const sleep = (ms) => new Promise(r=>setTimeout(r,ms));
 
   /* ============================================================
+     LAYOUT DE IMPRESSÃO (medidas exatas tiradas do mockup do
+     usuário, tela de 1181x673px representando um cartão de
+     90 x 57mm: foto crua à esquerda, QR + texto + ilustração
+     à direita)
+     ============================================================ */
+  const DESIGN_W = 1181, DESIGN_H = 673;
+  const PHOTO_X1 = 899;
+  const PHOTO_ASPECT = PHOTO_X1 / DESIGN_H;
+  const TXT1 = {x0:965,x1:1104,y0:68,y1:86};
+  const TXT2 = {x0:981,x1:1096,y0:103,y1:131};
+  const QRB  = {x0:962,x1:1120,y0:151,y1:308};
+  const DATEL= {x0:951,x1:1128,y0:532,y1:561};
+  const ILLB = {x0:933,x1:1150,y0:573,y1:660};
+  const CAPTURE_W = 1348, CAPTURE_H = Math.round(CAPTURE_W/PHOTO_ASPECT);
+
+  const familyImg = new Image();
+  familyImg.src = 'family-illustration.png';
+
+  /* ============================================================
      ESTADO
      ============================================================ */
   const settings = { paperWidth:384, quality:51, sound:true, frontCamera:true, gClientId: localStorage.getItem('gClientId') || '' };
@@ -289,7 +309,7 @@
      ELEMENTOS
      ============================================================ */
   const $ = (id)=>document.getElementById(id);
-  const video=$('video'), flashEl=$('flash'), countdownNum=$('countdownNum'), shotBadge=$('shotBadge');
+  const video=$('video'), flashEl=$('flash'), countdownNum=$('countdownNum');
   const shutter=$('shutter');
   const screenCamError=$('screenCamError'), camErrorMsg=$('camErrorMsg');
   const screenProcessing=$('screenProcessing'), processingBar=$('processingBar');
@@ -351,7 +371,7 @@
   };
 
   /* ============================================================
-     CAPTURA E MONTAGEM DA TIRA
+     CAPTURA
      ============================================================ */
   function captureFrame(targetW, targetH){
     const vw = video.videoWidth, vh = video.videoHeight;
@@ -370,41 +390,75 @@
     return c;
   }
 
-  function buildStripCanvas(photoCanvases, widthPx){
-    const sideMargin = 8, gap = 16, topMargin = 40, bottomFeed = 74, captionH = 30;
-    const photoW = widthPx - sideMargin*2;
-    const photoH = Math.round(photoW*1.25);
-    const n = photoCanvases.length;
-    const totalH = topMargin + n*photoH + (n-1)*gap + captionH + bottomFeed;
-
-    const strip = document.createElement('canvas');
-    strip.width = widthPx; strip.height = totalH;
-    const ctx = strip.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,widthPx,totalH);
-
-    let y = topMargin;
-    photoCanvases.forEach((pc, idx)=>{
-      ctx.drawImage(pc, sideMargin, y, photoW, photoH);
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-      ctx.strokeRect(sideMargin, y, photoW, photoH);
-      y += photoH;
-      if (idx < n-1){
-        const midY = y + gap/2;
-        ctx.save();
-        ctx.setLineDash([6,6]);
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(sideMargin, midY); ctx.lineTo(widthPx-sideMargin, midY); ctx.stroke();
-        ctx.restore();
-        y += gap;
+  // Gera o QR code direto no canvas (biblioteca kazuhikoarase/qrcode-generator)
+  function drawQR(ctx, text, x, y, w, h){
+    if (!window.qrcode) return;
+    try{
+      const qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      const count = qr.getModuleCount();
+      const cell = Math.floor(Math.min(w,h)/count);
+      const qrPx = cell*count;
+      const offsetX = x + (w-qrPx)/2, offsetY = y + (h-qrPx)/2;
+      ctx.fillStyle = '#000';
+      for (let r=0;r<count;r++){
+        for (let c=0;c<count;c++){
+          if (qr.isDark(r,c)) ctx.fillRect(offsetX+c*cell, offsetY+r*cell, cell, cell);
+        }
       }
-    });
+    }catch(e){ console.warn('QR falhou', e); }
+  }
+
+  // Monta o layout final (foto crua + texto + QR + ilustração), no
+  // tamanho nativo do mockup (1181x673) — fácil de conferir na tela.
+  function buildDesignCanvas(photoCanvas, qrLink){
+    const c = document.createElement('canvas');
+    c.width = DESIGN_W; c.height = DESIGN_H;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,DESIGN_W,DESIGN_H);
+
+    ctx.drawImage(photoCanvas, 0, 0, PHOTO_X1, DESIGN_H);
 
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(new Date().toLocaleDateString('pt-BR'), widthPx/2, y + captionH - 6);
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText('Acesse sua', (TXT1.x0+TXT1.x1)/2, TXT1.y1);
+    ctx.fillText('foto aqui', (TXT2.x0+TXT2.x1)/2, TXT2.y1);
 
-    return strip;
+    if (qrLink) drawQR(ctx, qrLink, QRB.x0, QRB.y0, QRB.x1-QRB.x0, QRB.y1-QRB.y0);
+
+    ctx.font = '600 20px system-ui, sans-serif';
+    ctx.fillText('____/____/____', (DATEL.x0+DATEL.x1)/2, DATEL.y1);
+
+    if (familyImg.complete && familyImg.naturalWidth){
+      const iw = ILLB.x1-ILLB.x0, ih = ILLB.y1-ILLB.y0;
+      const scale = Math.min(iw/familyImg.naturalWidth, ih/familyImg.naturalHeight);
+      const dw = familyImg.naturalWidth*scale, dh = familyImg.naturalHeight*scale;
+      const dx = ILLB.x0 + (iw-dw)/2, dy = ILLB.y0 + (ih-dh)/2;
+      ctx.drawImage(familyImg, dx, dy, dw, dh);
+    }
+    return c;
+  }
+
+  // O cabeçote da impressora é FIXO em 384px (57mm); o design é
+  // "deitado" (90mm de comprimento x 57mm de largura), então giramos
+  // 90° e escalamos pra caber no rolo antes de imprimir.
+  function buildPrintRaster(designCanvas, paperWidthPx){
+    const scale = paperWidthPx / designCanvas.height;
+    const scaledW = Math.round(designCanvas.width*scale);
+    const scaledH = paperWidthPx;
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = scaledH;
+    finalCanvas.height = scaledW;
+    const ctx = finalCanvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,finalCanvas.width, finalCanvas.height);
+    ctx.save();
+    ctx.translate(finalCanvas.width, 0);
+    ctx.rotate(Math.PI/2);
+    ctx.drawImage(designCanvas, 0, 0, scaledW, scaledH);
+    ctx.restore();
+    return finalCanvas;
   }
 
   // Dithering Floyd–Steinberg + empacotamento em bits (1 = queima/preto)
@@ -451,14 +505,13 @@
   }
 
   /* ============================================================
-     SEQUÊNCIA DE CAPTURA
+     SEQUÊNCIA DE CAPTURA (1 foto)
      ============================================================ */
   async function runCountdown(seconds){
     for (let s=seconds; s>=1; s--){
       countdownNum.textContent = s;
       countdownNum.style.transition = 'none';
       countdownNum.style.opacity = '0'; countdownNum.style.transform = 'scale(.7)';
-      // força reflow p/ reiniciar animação
       void countdownNum.offsetWidth;
       countdownNum.style.transition = 'opacity .18s, transform .18s';
       countdownNum.style.opacity = '1'; countdownNum.style.transform = 'scale(1)';
@@ -481,46 +534,42 @@
     if (state.busy) return;
     state.busy = true;
     shutter.disabled = true;
-    const shots = [];
-    const sideMargin = 8;
-    const photoW = settings.paperWidth - sideMargin*2;
-    const photoH = Math.round(photoW*1.25);
 
-    shotBadge.style.display = 'block';
-    for (let i=0;i<3;i++){
-      shotBadge.textContent = 'Foto ' + (i+1) + ' de 3';
-      await runCountdown(3);
-      const frame = captureFrame(photoW, photoH);
-      doFlash();
-      beep(1300, 70);
-      shots.push(frame);
-      await sleep(650);
-    }
-    shotBadge.style.display = 'none';
+    await runCountdown(3);
+    const rawPhoto = captureFrame(CAPTURE_W, CAPTURE_H);
+    doFlash();
+    beep(1300, 70);
+    await sleep(500);
 
     showScreen(screenProcessing);
-    processingBar.style.width = '30%';
-    await sleep(30);
-    const strip = buildStripCanvas(shots, settings.paperWidth);
-    processingBar.style.width = '65%';
+    processingBar.style.width = '20%';
     await sleep(20);
-    const rows = toBitmapRows(strip, settings.paperWidth);
+
+    let driveLink = null;
+    if (settings.gClientId){
+      try{ driveLink = await uploadPhotoToDrive(rawPhoto); }
+      catch(e){ driveLink = null; }
+    }
+    processingBar.style.width = '55%';
+    await sleep(20);
+
+    const design = buildDesignCanvas(rawPhoto, driveLink);
+    processingBar.style.width = '78%';
+    await sleep(20);
+
+    const raster = buildPrintRaster(design, settings.paperWidth);
+    const rows = toBitmapRows(raster, settings.paperWidth);
     lastRows = rows;
     processingBar.style.width = '100%';
     await sleep(150);
 
-    stripPreview.src = strip.toDataURL('image/png');
+    stripPreview.src = design.toDataURL('image/png');
     printProgressWrap.classList.add('hidden');
     printProgressBar.style.width='0%';
-    driveStatus.innerHTML = '';
+    driveStatus.innerHTML = settings.gClientId
+      ? (driveLink ? '<p>Salva no Drive ✅</p>' : '<p>Não consegui salvar no Drive agora.</p>')
+      : '';
     showScreen(screenReview);
-
-    if (settings.gClientId){
-      driveStatus.innerHTML = '<p>Enviando para o Drive…</p>';
-      uploadStripToDrive(strip)
-        .then(()=>{ driveStatus.innerHTML = '<p>Salva no Drive ✅</p>'; })
-        .catch((err)=>{ driveStatus.innerHTML = '<p>Não consegui salvar no Drive agora.</p>'; });
-    }
 
     if (btDevice){
       try{
@@ -611,10 +660,7 @@
   }
 
   /* ============================================================
-     GOOGLE DRIVE (salva a versão digital da tira)
-     Usa Google Identity Services (OAuth token client, sem back-end)
-     + Google Drive API v3 (escopo drive.file: só arquivos criados
-     pelo próprio app).
+     GOOGLE DRIVE (salva a versão digital crua + gera link pro QR)
      ============================================================ */
   function setDriveConnectStatus(text){ driveConnectStatus.textContent = text; }
 
@@ -651,7 +697,6 @@
 
   async function ensureDriveToken(){
     if (gDriveToken && Date.now() < gDriveTokenExpiry) return gDriveToken;
-    // tenta renovar em silêncio primeiro (sem popup); se falhar, quem chamou decide o que fazer
     return requestDriveToken('');
   }
 
@@ -677,7 +722,9 @@
     return gDriveFolderId;
   }
 
-  async function uploadStripToDrive(canvas){
+  // Sobe a foto CRUA (sem moldura, sem dithering) e devolve um link
+  // público (qualquer pessoa com o link consegue ver) pro QR code.
+  async function uploadPhotoToDrive(canvas){
     const token = await ensureDriveToken();
     const folderId = await ensureDriveFolder(token);
     const blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
@@ -685,13 +732,21 @@
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
     form.append('file', blob);
-    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
       method:'POST',
       headers:{ Authorization:'Bearer ' + token },
       body: form
     });
     if (!res.ok) throw new Error('Drive respondeu ' + res.status);
-    return res.json();
+    const data = await res.json();
+    try{
+      await fetch('https://www.googleapis.com/drive/v3/files/' + data.id + '/permissions', {
+        method:'POST',
+        headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' },
+        body: JSON.stringify({ role:'reader', type:'anyone' })
+      });
+    }catch(e){ /* mesmo sem isso, o dono ainda acessa pelo Drive normalmente */ }
+    return data.webViewLink || ('https://drive.google.com/file/d/' + data.id + '/view');
   }
 
   connectDriveBtn.addEventListener('click', async ()=>{
@@ -701,7 +756,7 @@
     setDriveConnectStatus('Conectando…');
     try{
       await requestDriveToken();
-      const folderId = await ensureDriveFolder(gDriveToken);
+      await ensureDriveFolder(gDriveToken);
       setDriveConnectStatus('Conectado — salvando na pasta "Photobooth" do seu Drive ✅');
     }catch(err){
       gDriveConnected = false;
