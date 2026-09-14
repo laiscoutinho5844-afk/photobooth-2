@@ -11,6 +11,7 @@
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <title>Photobooth</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg:#050505;
@@ -153,7 +154,6 @@
       <span id="btPillText">Impressora não conectada</span>
     </button>
     <div style="display:flex; gap:8px;">
-      <button id="fullscreenBtn" class="icon-btn" title="Tela cheia">⛶</button>
       <button id="gearBtn" class="icon-btn">⚙️</button>
     </div>
   </div>
@@ -186,6 +186,7 @@
   <div id="screenReview" class="screen hidden">
     <img id="stripPreview" alt="Tira de fotos" />
     <div id="reviewStatus"><p>Pronta!</p></div>
+    <div id="driveStatus"></div>
     <div class="progressBar hidden" id="printProgressWrap"><div id="printProgressBar"></div></div>
     <button id="printBtn" class="btn">🖨️ Imprimir</button>
     <button id="downloadBtn" class="btn secondary">⬇️ Baixar imagem</button>
@@ -224,6 +225,17 @@
       <div class="field row">
         <label style="margin:0;">Câmera frontal</label>
         <div class="switch on" id="cameraSwitch"></div>
+      </div>
+
+      <div class="field">
+        <label>Google Client ID (Google Cloud Console)</label>
+        <input type="text" id="gClientIdInput" placeholder="xxxxxxxxxx.apps.googleusercontent.com" />
+      </div>
+
+      <div class="field">
+        <label>Google Drive</label>
+        <button id="connectDriveBtn" class="btn secondary" style="width:100%;">Conectar Google Drive</button>
+        <p id="driveConnectStatus" style="margin-top:8px;">Não conectado</p>
       </div>
 
       <button class="btn secondary" style="width:100%;" id="closeSettingsBtn">Fechar</button>
@@ -267,10 +279,11 @@
   /* ============================================================
      ESTADO
      ============================================================ */
-  const settings = { paperWidth:384, quality:51, sound:true, frontCamera:true };
+  const settings = { paperWidth:384, quality:51, sound:true, frontCamera:true, gClientId: localStorage.getItem('gClientId') || '' };
   const state = { busy:false, stream:null };
   let btDevice=null, btServer=null, writeChar=null;
   let lastRows=null;
+  let gDriveToken=null, gDriveTokenExpiry=0, gDriveFolderId=localStorage.getItem('gDriveFolderId') || null, gDriveConnected=false;
 
   /* ============================================================
      ELEMENTOS
@@ -286,9 +299,11 @@
   const reviewStatus=$('reviewStatus');
   const btPill=$('btPill'), btPillText=$('btPillText'), connectBtn=$('connectBtn');
   const gearBtn=$('gearBtn'), settingsPanel=$('settings'), closeSettingsBtn=$('closeSettingsBtn');
-  const fullscreenBtn=$('fullscreenBtn');
   const paperWidthInput=$('paperWidthInput'), qualitySeg=$('qualitySeg');
   const soundSwitch=$('soundSwitch'), cameraSwitch=$('cameraSwitch');
+  const gClientIdInput=$('gClientIdInput'), connectDriveBtn=$('connectDriveBtn'), driveConnectStatus=$('driveConnectStatus');
+  const driveStatus=$('driveStatus');
+  gClientIdInput.value = settings.gClientId;
 
   function showScreen(el){
     [screenCamError,screenProcessing,screenReview].forEach(s=>s.classList.add('hidden'));
@@ -497,7 +512,15 @@
     stripPreview.src = strip.toDataURL('image/png');
     printProgressWrap.classList.add('hidden');
     printProgressBar.style.width='0%';
+    driveStatus.innerHTML = '';
     showScreen(screenReview);
+
+    if (settings.gClientId){
+      driveStatus.innerHTML = '<p>Enviando para o Drive…</p>';
+      uploadStripToDrive(strip)
+        .then(()=>{ driveStatus.innerHTML = '<p>Salva no Drive ✅</p>'; })
+        .catch((err)=>{ driveStatus.innerHTML = '<p>Não consegui salvar no Drive agora.</p>'; });
+    }
 
     if (btDevice){
       try{
@@ -588,22 +611,108 @@
   }
 
   /* ============================================================
-     TELA CHEIA (some com a barra de endereço do Chrome)
+     GOOGLE DRIVE (salva a versão digital da tira)
+     Usa Google Identity Services (OAuth token client, sem back-end)
+     + Google Drive API v3 (escopo drive.file: só arquivos criados
+     pelo próprio app).
      ============================================================ */
-  function requestFullscreenOnce(){
-    try{
-      const el = document.documentElement;
-      if (!document.fullscreenElement && el.requestFullscreen){
-        el.requestFullscreen().catch(()=>{});
+  function setDriveConnectStatus(text){ driveConnectStatus.textContent = text; }
+
+  function requestDriveToken(promptOption){
+    return new Promise((resolve, reject)=>{
+      if (!window.google || !google.accounts || !google.accounts.oauth2){
+        reject(new Error('Google Identity Services ainda não carregou. Verifique sua internet e tente de novo.'));
+        return;
       }
-    }catch(e){}
+      if (!settings.gClientId){
+        reject(new Error('Cole o Google Client ID nos ajustes primeiro.'));
+        return;
+      }
+      try{
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: settings.gClientId,
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          callback: (resp)=>{
+            if (resp && resp.access_token){
+              gDriveToken = resp.access_token;
+              gDriveTokenExpiry = Date.now() + ((resp.expires_in||3300)*1000 - 60000);
+              gDriveConnected = true;
+              resolve(gDriveToken);
+            } else {
+              reject(new Error('Não recebi um token de acesso do Google.'));
+            }
+          },
+          error_callback: (err)=> reject(err && err.message ? err : new Error('Falha na autenticação do Google.')),
+        });
+        client.requestAccessToken(promptOption ? { prompt: promptOption } : {});
+      }catch(e){ reject(e); }
+    });
   }
+
+  async function ensureDriveToken(){
+    if (gDriveToken && Date.now() < gDriveTokenExpiry) return gDriveToken;
+    // tenta renovar em silêncio primeiro (sem popup); se falhar, quem chamou decide o que fazer
+    return requestDriveToken('');
+  }
+
+  async function ensureDriveFolder(token){
+    if (gDriveFolderId) return gDriveFolderId;
+    const q = encodeURIComponent("name='Photobooth' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+    const res = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', {
+      headers:{ Authorization:'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (data.files && data.files.length){
+      gDriveFolderId = data.files[0].id;
+    } else {
+      const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method:'POST',
+        headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' },
+        body: JSON.stringify({ name:'Photobooth', mimeType:'application/vnd.google-apps.folder' })
+      });
+      const created = await createRes.json();
+      gDriveFolderId = created.id;
+    }
+    localStorage.setItem('gDriveFolderId', gDriveFolderId);
+    return gDriveFolderId;
+  }
+
+  async function uploadStripToDrive(canvas){
+    const token = await ensureDriveToken();
+    const folderId = await ensureDriveFolder(token);
+    const blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
+    const metadata = { name:'photobooth-' + Date.now() + '.png', parents:[folderId] };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+    form.append('file', blob);
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method:'POST',
+      headers:{ Authorization:'Bearer ' + token },
+      body: form
+    });
+    if (!res.ok) throw new Error('Drive respondeu ' + res.status);
+    return res.json();
+  }
+
+  connectDriveBtn.addEventListener('click', async ()=>{
+    settings.gClientId = gClientIdInput.value.trim();
+    if (!settings.gClientId){ alert('Cole o Google Client ID antes de conectar.'); return; }
+    localStorage.setItem('gClientId', settings.gClientId);
+    setDriveConnectStatus('Conectando…');
+    try{
+      await requestDriveToken();
+      const folderId = await ensureDriveFolder(gDriveToken);
+      setDriveConnectStatus('Conectado — salvando na pasta "Photobooth" do seu Drive ✅');
+    }catch(err){
+      gDriveConnected = false;
+      setDriveConnectStatus('Falha: ' + (err && err.message ? err.message : err));
+    }
+  });
 
   /* ============================================================
      LIGAÇÕES DE UI
      ============================================================ */
-  shutter.addEventListener('click', ()=>{ requestFullscreenOnce(); startSession(); });
-  fullscreenBtn.addEventListener('click', requestFullscreenOnce);
+  shutter.addEventListener('click', startSession);
 
   gearBtn.addEventListener('click', ()=> settingsPanel.classList.remove('hidden'));
   closeSettingsBtn.addEventListener('click', ()=> settingsPanel.classList.add('hidden'));
