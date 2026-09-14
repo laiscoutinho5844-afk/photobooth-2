@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>fotasso</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#171717;
+    --muted:#8c8c86;
+    --accent:#9eff1f;      /* verde da marca fotasso */
+    --accent-ink:#171717;
+    --surface:#f6f6f1;
+    --surface-2:#ecece4;
+    --ok:#2f9e44;
+    --warn:#c9740a;
+    --danger:#e5484d;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+    background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  #app{position:fixed; inset:0; display:flex; flex-direction:column;}
+
+  /* ---------- topo ---------- */
+  #topbar{
+    position:absolute; top:0; left:0; right:0; z-index:20;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;
+    pointer-events:none;
+  }
+  #topbar > *{pointer-events:auto;}
+  .pill{
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface); border:1px solid var(--surface-2);
+    border-radius:999px; padding:7px 13px; font-size:12px; color:var(--muted);
+  }
+  .pill.ok{color:var(--ok);}
+  .pill.warn{color:var(--warn);}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .icon-btn{
+    width:36px;height:36px;border-radius:50%; border:1px solid var(--surface-2);
+    background:var(--surface); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+
+  /* ---------- palco / câmera ---------- */
+  #stage{
+    position:relative; flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:0 5vw;
+  }
+  #camFrame{
+    position:relative; width:90vw; aspect-ratio:899/673;
+    border-radius:22px; overflow:hidden; background:#000;
+    box-shadow:0 8px 30px rgba(0,0,0,.12);
+  }
+  video{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    transform:scaleX(-1);
+  }
+  #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:15;}
+  #countdownNum{
+    position:absolute; inset:0; z-index:12;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26vw; font-weight:800; color:#fff;
+    text-shadow:0 6px 30px rgba(0,0,0,.55);
+    opacity:0; transform:scale(.7);
+    pointer-events:none;
+  }
+  #logoPill{
+    position:absolute; z-index:14; top:10px; left:50%; transform:translateX(-50%);
+    background:#fff; border-radius:999px; padding:5px 14px;
+    box-shadow:0 3px 12px rgba(0,0,0,.18);
+    display:flex; align-items:center;
+  }
+  #logoPill img{height:20px; width:auto; display:block;}
+
+  /* ---------- botão obturador (estrela) ---------- */
+  #shutter{
+    position:fixed; z-index:20; right:3.2vw; top:50%; transform:translateY(-50%);
+    width:74px; height:74px; background:var(--ink); border:none;
+    clip-path:polygon(50.00% 0.00%, 61.28% 26.57%, 89.09% 18.83%, 75.35% 44.21%, 98.75% 61.13%, 70.33% 66.21%, 71.69% 95.05%, 50.00% 76.00%, 28.31% 95.05%, 29.67% 66.21%, 1.25% 61.13%, 24.65% 44.21%, 10.91% 18.83%, 38.72% 26.57%);
+  }
+  #shutter:active{transform:translateY(-50%) scale(.92);}
+  #shutter[disabled]{opacity:.4;}
+
+  /* ---------- telas auxiliares ---------- */
+  .screen{
+    position:absolute; inset:0; z-index:30;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--bg); padding:24px; text-align:center; gap:16px;
+  }
+  .hidden{display:none !important;}
+  h1{font-size:19px; font-weight:700; margin:0;}
+  p{color:var(--muted); font-size:14px; line-height:1.5; margin:0; max-width:320px;}
+
+  .btn{
+    appearance:none; border:none; border-radius:14px; padding:14px 22px;
+    font-size:15px; font-weight:700; color:var(--accent-ink); background:var(--accent);
+    min-width:220px;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn.secondary{background:var(--surface); color:var(--ink); border:1px solid var(--surface-2);}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--surface-2);}
+  .btn[disabled]{opacity:.5;}
+
+  #stripPreview{max-width:82vw; max-height:52vh; border-radius:10px; box-shadow:0 10px 34px rgba(0,0,0,.16); background:#fff;}
+
+  .progressBar{width:240px; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
+  .progressBar > div{height:100%; width:0%; background:var(--accent); transition:width .15s;}
+
+  /* ---------- settings ---------- */
+  #settings{position:absolute; inset:0; z-index:40; background:rgba(0,0,0,.35); display:flex; align-items:flex-end;}
+  #settings.hidden{display:none;}
+  #settingsCard{
+    width:100%; background:var(--bg); border-radius:20px 20px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom,0px) + 22px); max-height:80vh; overflow:auto;
+    box-shadow:0 -8px 30px rgba(0,0,0,.15);
+  }
+  .field{margin-bottom:18px; text-align:left;}
+  .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px;}
+  .segmented{display:flex; gap:8px;}
+  .segmented button{
+    flex:1; padding:10px; border-radius:10px; border:1px solid var(--surface-2);
+    background:var(--surface); color:var(--muted); font-size:13px;
+  }
+  .segmented button.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  input[type=number], input[type=text]{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--surface-2);
+    background:var(--surface); color:var(--ink); font-size:15px;
+  }
+  .row{display:flex; align-items:center; justify-content:space-between;}
+  .switch{width:46px; height:26px; border-radius:999px; background:var(--surface-2); position:relative; border:1px solid var(--surface-2);}
+  .switch.on{background:var(--accent);}
+  .switch::after{content:"";position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .switch.on::after{left:22px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <button id="btPill" class="pill warn">
+      <span class="dot"></span>
+      <span id="btPillText">Impressora não conectada</span>
+    </button>
+    <button id="gearBtn" class="icon-btn">⚙️</button>
+  </div>
+
+  <div id="stage">
+    <div id="camFrame">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="flash"></div>
+      <div id="countdownNum"></div>
+      <div id="logoPill"><img src="logo-fotasso.png" alt="fotasso" /></div>
+    </div>
+  </div>
+
+  <button id="shutter" aria-label="Iniciar"></button>
+
+  <!-- tela: câmera indisponível -->
+  <div id="screenCamError" class="screen hidden">
+    <h1>Não consegui acessar a câmera</h1>
+    <p id="camErrorMsg">Verifique se você permitiu o acesso à câmera e se está abrindo esta página pelo Chrome.</p>
+    <button class="btn" onclick="initCamera()">Tentar de novo</button>
+  </div>
+
+  <!-- tela: processando -->
+  <div id="screenProcessing" class="screen hidden">
+    <h1>Revelando sua foto…</h1>
+    <div class="progressBar"><div id="processingBar"></div></div>
+  </div>
+
+  <!-- tela: revisão / impressão -->
+  <div id="screenReview" class="screen hidden">
+    <img id="stripPreview" alt="Foto" />
+    <div id="reviewStatus"><p>Pronta!</p></div>
+    <div id="driveStatus"></div>
+    <div class="progressBar hidden" id="printProgressWrap"><div id="printProgressBar"></div></div>
+    <button id="printBtn" class="btn">🖨️ Imprimir</button>
+    <button id="downloadBtn" class="btn secondary">⬇️ Baixar imagem</button>
+    <button id="newSessionBtn" class="btn ghost">Nova sessão</button>
+  </div>
+
+  <!-- settings -->
+  <div id="settings" class="hidden">
+    <div id="settingsCard">
+      <h1 style="margin-bottom:18px;">Ajustes</h1>
+
+      <div class="field">
+        <label>Impressora</label>
+        <button id="connectBtn" class="btn secondary" style="width:100%;">Conectar impressora</button>
+      </div>
+
+      <div class="field">
+        <label>Largura do papel (px, múltiplo de 8)</label>
+        <input type="number" id="paperWidthInput" step="8" min="128" max="960" value="384" />
+      </div>
+
+      <div class="field">
+        <label>Intensidade de impressão</label>
+        <div class="segmented" id="qualitySeg">
+          <button data-v="24">Clara</button>
+          <button data-v="51" class="active">Normal</button>
+          <button data-v="90">Escura</button>
+        </div>
+      </div>
+
+      <div class="field row">
+        <label style="margin:0;">Som</label>
+        <div class="switch on" id="soundSwitch"></div>
+      </div>
+
+      <div class="field row">
+        <label style="margin:0;">Câmera frontal</label>
+        <div class="switch on" id="cameraSwitch"></div>
+      </div>
+
+      <div class="field">
+        <label>Google Client ID (Google Cloud Console)</label>
+        <input type="text" id="gClientIdInput" placeholder="xxxxxxxxxx.apps.googleusercontent.com" />
+      </div>
+
+      <div class="field">
+        <label>Google Drive</label>
+        <button id="connectDriveBtn" class="btn secondary" style="width:100%;">Conectar Google Drive</button>
+        <p id="driveConnectStatus" style="margin-top:8px;">Não conectado</p>
+      </div>
+
+      <button class="btn secondary" style="width:100%;" id="closeSettingsBtn">Fechar</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     PROTOCOLO BLUETOOTH (impressoras "cat printer" / GB0x / MX0x)
+     Baseado em engenharia reversa pública do protocolo usado pelo
+     app iPrint com esse chip. Pacote:
+     [0x51,0x78, CMD, 0x00, lenLo, lenHi, ...dados, crc8(dados), 0xFF]
+     ============================================================ */
+  const SERVICE_UUID = '0000ae30-0000-1000-8000-00805f9b34fb';
+  const CHAR_WRITE_UUID = '0000ae01-0000-1000-8000-00805f9b34fb';
+  const CHAR_NOTIFY_UUID = '0000ae02-0000-1000-8000-00805f9b34fb';
+  const CMD = { SET_QUALITY:0xA4, SET_ENERGY:0xAF, SET_MODE:0xBE, DRAW_LINE:0xA2, FEED_PAPER:0xA1 };
+
+  function crc8(bytes){
+    let crc = 0;
+    for (const b of bytes){
+      crc ^= b;
+      for (let i=0;i<8;i++){
+        crc = (crc & 0x80) ? ((crc<<1)^0x07) & 0xFF : (crc<<1) & 0xFF;
+      }
+    }
+    return crc & 0xFF;
+  }
+  function buildPacket(cmd, data){
+    data = data || [];
+    const len = data.length;
+    return new Uint8Array([0x51,0x78, cmd & 0xFF, 0x00, len & 0xFF, (len>>8) & 0xFF, ...data, crc8(data), 0xFF]);
+  }
+  const sleep = (ms) => new Promise(r=>setTimeout(r,ms));
+
+  /* ============================================================
+     LAYOUT DE IMPRESSÃO (medidas exatas tiradas do mockup do
+     usuário, tela de 1181x673px representando um cartão de
+     90 x 57mm: foto crua à esquerda, QR + texto + ilustração
+     à direita)
+     ============================================================ */
+  const DESIGN_W = 1181, DESIGN_H = 673;
+  const PHOTO_X1 = 899;
+  const PHOTO_ASPECT = PHOTO_X1 / DESIGN_H;
+  const TXT1 = {x0:965,x1:1104,y0:68,y1:86};
+  const TXT2 = {x0:981,x1:1096,y0:103,y1:131};
+  const QRB  = {x0:962,x1:1120,y0:151,y1:308};
+  const DATEL= {x0:951,x1:1128,y0:532,y1:561};
+  const ILLB = {x0:933,x1:1150,y0:573,y1:660};
+  const CAPTURE_W = 1348, CAPTURE_H = Math.round(CAPTURE_W/PHOTO_ASPECT);
+
+  const familyImg = new Image();
+  familyImg.src = 'family-illustration.png';
+
+  /* ============================================================
+     ESTADO
+     ============================================================ */
+  const settings = { paperWidth:384, quality:51, sound:true, frontCamera:true, gClientId: localStorage.getItem('gClientId') || '' };
+  const state = { busy:false, stream:null };
+  let btDevice=null, btServer=null, writeChar=null;
+  let lastRows=null;
+  let gDriveToken=null, gDriveTokenExpiry=0, gDriveFolderId=localStorage.getItem('gDriveFolderId') || null, gDriveConnected=false;
+
+  /* ============================================================
+     ELEMENTOS
+     ============================================================ */
+  const $ = (id)=>document.getElementById(id);
+  const video=$('video'), flashEl=$('flash'), countdownNum=$('countdownNum');
+  const shutter=$('shutter');
+  const screenCamError=$('screenCamError'), camErrorMsg=$('camErrorMsg');
+  const screenProcessing=$('screenProcessing'), processingBar=$('processingBar');
+  const screenReview=$('screenReview'), stripPreview=$('stripPreview');
+  const printBtn=$('printBtn'), downloadBtn=$('downloadBtn'), newSessionBtn=$('newSessionBtn');
+  const printProgressWrap=$('printProgressWrap'), printProgressBar=$('printProgressBar');
+  const reviewStatus=$('reviewStatus');
+  const btPill=$('btPill'), btPillText=$('btPillText'), connectBtn=$('connectBtn');
+  const gearBtn=$('gearBtn'), settingsPanel=$('settings'), closeSettingsBtn=$('closeSettingsBtn');
+  const paperWidthInput=$('paperWidthInput'), qualitySeg=$('qualitySeg');
+  const soundSwitch=$('soundSwitch'), cameraSwitch=$('cameraSwitch');
+  const gClientIdInput=$('gClientIdInput'), connectDriveBtn=$('connectDriveBtn'), driveConnectStatus=$('driveConnectStatus');
+  const driveStatus=$('driveStatus');
+  gClientIdInput.value = settings.gClientId;
+
+  function showScreen(el){
+    [screenCamError,screenProcessing,screenReview].forEach(s=>s.classList.add('hidden'));
+    if (el) el.classList.remove('hidden');
+  }
+
+  /* ============================================================
+     ÁUDIO (bipes sintetizados, sem depender de arquivos externos)
+     ============================================================ */
+  let audioCtx=null;
+  function beep(freq, dur){
+    if (!settings.sound) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(.18, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur/1000);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + dur/1000);
+    }catch(e){}
+  }
+
+  /* ============================================================
+     CÂMERA
+     ============================================================ */
+  window.initCamera = async function initCamera(){
+    showScreen(null);
+    try{
+      if (state.stream) state.stream.getTracks().forEach(t=>t.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{ facingMode: settings.frontCamera ? 'user' : 'environment', width:{ideal:1280}, height:{ideal:1280} }
+      });
+      state.stream = stream;
+      video.srcObject = stream;
+      video.style.transform = settings.frontCamera ? 'scaleX(-1)' : 'none';
+      await video.play().catch(()=>{});
+    }catch(err){
+      camErrorMsg.textContent = 'Verifique se você permitiu o acesso à câmera e se está abrindo esta página pelo Chrome. (' + (err && err.message ? err.message : err) + ')';
+      showScreen(screenCamError);
+    }
+  };
+
+  /* ============================================================
+     CAPTURA
+     ============================================================ */
+  function captureFrame(targetW, targetH){
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const targetAspect = targetW/targetH;
+    const srcAspect = vw/vh;
+    let sx,sy,sw,sh;
+    if (srcAspect > targetAspect){ sh=vh; sw=vh*targetAspect; sx=(vw-sw)/2; sy=0; }
+    else { sw=vw; sh=vw/targetAspect; sx=0; sy=(vh-sh)/2; }
+    const c = document.createElement('canvas');
+    c.width = targetW; c.height = targetH;
+    const ctx = c.getContext('2d');
+    if (settings.frontCamera){
+      ctx.translate(targetW,0); ctx.scale(-1,1); // espelha p/ bater com a prévia
+    }
+    ctx.drawImage(video, sx,sy,sw,sh, 0,0,targetW,targetH);
+    return c;
+  }
+
+  // Gera o QR code direto no canvas (biblioteca kazuhikoarase/qrcode-generator)
+  function drawQR(ctx, text, x, y, w, h){
+    if (!window.qrcode) return;
+    try{
+      const qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      const count = qr.getModuleCount();
+      const cell = Math.floor(Math.min(w,h)/count);
+      const qrPx = cell*count;
+      const offsetX = x + (w-qrPx)/2, offsetY = y + (h-qrPx)/2;
+      ctx.fillStyle = '#000';
+      for (let r=0;r<count;r++){
+        for (let c=0;c<count;c++){
+          if (qr.isDark(r,c)) ctx.fillRect(offsetX+c*cell, offsetY+r*cell, cell, cell);
+        }
+      }
+    }catch(e){ console.warn('QR falhou', e); }
+  }
+
+  // Monta o layout final (foto crua + texto + QR + ilustração), no
+  // tamanho nativo do mockup (1181x673) — fácil de conferir na tela.
+  function buildDesignCanvas(photoCanvas, qrLink){
+    const c = document.createElement('canvas');
+    c.width = DESIGN_W; c.height = DESIGN_H;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,DESIGN_W,DESIGN_H);
+
+    ctx.drawImage(photoCanvas, 0, 0, PHOTO_X1, DESIGN_H);
+
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText('Acesse sua', (TXT1.x0+TXT1.x1)/2, TXT1.y1);
+    ctx.fillText('foto aqui', (TXT2.x0+TXT2.x1)/2, TXT2.y1);
+
+    if (qrLink) drawQR(ctx, qrLink, QRB.x0, QRB.y0, QRB.x1-QRB.x0, QRB.y1-QRB.y0);
+
+    ctx.font = '600 20px system-ui, sans-serif';
+    ctx.fillText('____/____/____', (DATEL.x0+DATEL.x1)/2, DATEL.y1);
+
+    if (familyImg.complete && familyImg.naturalWidth){
+      const iw = ILLB.x1-ILLB.x0, ih = ILLB.y1-ILLB.y0;
+      const scale = Math.min(iw/familyImg.naturalWidth, ih/familyImg.naturalHeight);
+      const dw = familyImg.naturalWidth*scale, dh = familyImg.naturalHeight*scale;
+      const dx = ILLB.x0 + (iw-dw)/2, dy = ILLB.y0 + (ih-dh)/2;
+      ctx.drawImage(familyImg, dx, dy, dw, dh);
+    }
+    return c;
+  }
+
+  // O cabeçote da impressora é FIXO em 384px (57mm); o design é
+  // "deitado" (90mm de comprimento x 57mm de largura), então giramos
+  // 90° e escalamos pra caber no rolo antes de imprimir.
+  function buildPrintRaster(designCanvas, paperWidthPx){
+    const scale = paperWidthPx / designCanvas.height;
+    const scaledW = Math.round(designCanvas.width*scale);
+    const scaledH = paperWidthPx;
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = scaledH;
+    finalCanvas.height = scaledW;
+    const ctx = finalCanvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,finalCanvas.width, finalCanvas.height);
+    ctx.save();
+    ctx.translate(finalCanvas.width, 0);
+    ctx.rotate(Math.PI/2);
+    ctx.drawImage(designCanvas, 0, 0, scaledW, scaledH);
+    ctx.restore();
+    return finalCanvas;
+  }
+
+  // Dithering Floyd–Steinberg + empacotamento em bits (1 = queima/preto)
+  function toBitmapRows(canvas, widthPx){
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const img = ctx.getImageData(0,0,w,h);
+    const gray = new Float32Array(w*h);
+    for (let i=0;i<w*h;i++){
+      const r=img.data[i*4], g=img.data[i*4+1], b=img.data[i*4+2];
+      gray[i] = 0.299*r + 0.587*g + 0.114*b;
+    }
+    for (let y=0;y<h;y++){
+      for (let x=0;x<w;x++){
+        const idx = y*w+x;
+        const old = gray[idx];
+        const nv = old < 128 ? 0 : 255;
+        const err = old - nv;
+        gray[idx] = nv;
+        if (x+1<w) gray[idx+1] += err*7/16;
+        if (y+1<h){
+          if (x>0) gray[idx+w-1] += err*3/16;
+          gray[idx+w] += err*5/16;
+          if (x+1<w) gray[idx+w+1] += err*1/16;
+        }
+      }
+    }
+    const bytesPerRow = widthPx/8;
+    const rows = [];
+    for (let y=0;y<h;y++){
+      const row = new Uint8Array(bytesPerRow);
+      for (let bx=0; bx<bytesPerRow; bx++){
+        let byte=0;
+        for (let bit=0; bit<8; bit++){
+          const x = bx*8+bit;
+          const black = gray[y*w+x] < 128 ? 1:0;
+          byte |= black << (7-bit);
+        }
+        row[bx]=byte;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  /* ============================================================
+     SEQUÊNCIA DE CAPTURA (1 foto)
+     ============================================================ */
+  async function runCountdown(seconds){
+    for (let s=seconds; s>=1; s--){
+      countdownNum.textContent = s;
+      countdownNum.style.transition = 'none';
+      countdownNum.style.opacity = '0'; countdownNum.style.transform = 'scale(.7)';
+      void countdownNum.offsetWidth;
+      countdownNum.style.transition = 'opacity .18s, transform .18s';
+      countdownNum.style.opacity = '1'; countdownNum.style.transform = 'scale(1)';
+      beep(760, 90);
+      await sleep(1000);
+    }
+    countdownNum.style.opacity = '0';
+  }
+
+  function doFlash(){
+    flashEl.style.transition = 'none';
+    flashEl.style.opacity = '1';
+    requestAnimationFrame(()=>{
+      flashEl.style.transition = 'opacity .35s';
+      flashEl.style.opacity = '0';
+    });
+  }
+
+  async function startSession(){
+    if (state.busy) return;
+    state.busy = true;
+    shutter.disabled = true;
+
+    await runCountdown(3);
+    const rawPhoto = captureFrame(CAPTURE_W, CAPTURE_H);
+    doFlash();
+    beep(1300, 70);
+    await sleep(500);
+
+    showScreen(screenProcessing);
+    processingBar.style.width = '20%';
+    await sleep(20);
+
+    let driveLink = null;
+    if (settings.gClientId){
+      try{ driveLink = await uploadPhotoToDrive(rawPhoto); }
+      catch(e){ driveLink = null; }
+    }
+    processingBar.style.width = '55%';
+    await sleep(20);
+
+    const design = buildDesignCanvas(rawPhoto, driveLink);
+    processingBar.style.width = '78%';
+    await sleep(20);
+
+    const raster = buildPrintRaster(design, settings.paperWidth);
+    const rows = toBitmapRows(raster, settings.paperWidth);
+    lastRows = rows;
+    processingBar.style.width = '100%';
+    await sleep(150);
+
+    stripPreview.src = design.toDataURL('image/png');
+    printProgressWrap.classList.add('hidden');
+    printProgressBar.style.width='0%';
+    driveStatus.innerHTML = settings.gClientId
+      ? (driveLink ? '<p>Salva no Drive ✅</p>' : '<p>Não consegui salvar no Drive agora.</p>')
+      : '';
+    showScreen(screenReview);
+
+    if (btDevice){
+      try{
+        await ensureConnected();
+        reviewStatus.innerHTML = '<p>Imprimindo automaticamente…</p>';
+        await doPrint(rows);
+        reviewStatus.innerHTML = '<p>Impressa! 🎉</p>';
+      }catch(err){
+        reviewStatus.innerHTML = '<p>Não consegui imprimir automaticamente. Toque em Imprimir para tentar de novo.</p>';
+      }
+    } else {
+      reviewStatus.innerHTML = '<p>Impressora não conectada — toque em Imprimir.</p>';
+    }
+
+    state.busy = false;
+    shutter.disabled = false;
+  }
+
+  /* ============================================================
+     BLUETOOTH
+     ============================================================ */
+  function setBtStatus(kind, text){
+    btPill.classList.remove('ok','warn');
+    btPill.classList.add(kind === 'ok' ? 'ok' : 'warn');
+    btPillText.textContent = text;
+  }
+
+  async function ensureConnected(){
+    if (!btDevice) throw new Error('sem dispositivo');
+    if (!btDevice.gatt.connected){
+      btServer = await btDevice.gatt.connect();
+      const service = await btServer.getPrimaryService(SERVICE_UUID);
+      writeChar = await service.getCharacteristic(CHAR_WRITE_UUID);
+      try{
+        const notifyChar = await service.getCharacteristic(CHAR_NOTIFY_UUID);
+        await notifyChar.startNotifications();
+      }catch(e){ /* opcional, ignora se não existir */ }
+    }
+    setBtStatus('ok', btDevice.name || 'Impressora conectada');
+  }
+
+  async function connectPrinter(){
+    if (!navigator.bluetooth){
+      alert('Este navegador não suporta Bluetooth Web. Abra esta página no Chrome do Android.');
+      return;
+    }
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices:true,
+        optionalServices:[SERVICE_UUID]
+      });
+      btDevice = device;
+      device.addEventListener('gattserverdisconnected', ()=>{
+        setBtStatus('warn', 'Impressora desconectada');
+      });
+      await ensureConnected();
+    }catch(err){
+      if (err && err.name !== 'NotFoundError'){
+        alert('Não consegui conectar: ' + (err && err.message ? err.message : err));
+      }
+    }
+  }
+
+  async function sendPacket(bytes){
+    if (writeChar.writeValueWithoutResponse){
+      await writeChar.writeValueWithoutResponse(bytes);
+    } else {
+      await writeChar.writeValue(bytes);
+    }
+  }
+
+  async function doPrint(rows){
+    printProgressWrap.classList.remove('hidden');
+    printBtn.disabled = true;
+    await sendPacket(buildPacket(CMD.SET_QUALITY, [settings.quality]));
+    await sleep(30);
+    await sendPacket(buildPacket(CMD.SET_ENERGY, [0xE0, 0x2E]));
+    await sleep(30);
+    await sendPacket(buildPacket(CMD.SET_MODE, [0x00]));
+    await sleep(30);
+    for (let i=0;i<rows.length;i++){
+      await sendPacket(buildPacket(CMD.DRAW_LINE, Array.from(rows[i])));
+      await sleep(16);
+      printProgressBar.style.width = Math.round(((i+1)/rows.length)*100) + '%';
+    }
+    await sendPacket(buildPacket(CMD.FEED_PAPER, [0x80, 0x00]));
+    printBtn.disabled = false;
+  }
+
+  /* ============================================================
+     GOOGLE DRIVE (salva a versão digital crua + gera link pro QR)
+     ============================================================ */
+  function setDriveConnectStatus(text){ driveConnectStatus.textContent = text; }
+
+  function requestDriveToken(promptOption){
+    return new Promise((resolve, reject)=>{
+      if (!window.google || !google.accounts || !google.accounts.oauth2){
+        reject(new Error('Google Identity Services ainda não carregou. Verifique sua internet e tente de novo.'));
+        return;
+      }
+      if (!settings.gClientId){
+        reject(new Error('Cole o Google Client ID nos ajustes primeiro.'));
+        return;
+      }
+      try{
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: settings.gClientId,
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          callback: (resp)=>{
+            if (resp && resp.access_token){
+              gDriveToken = resp.access_token;
+              gDriveTokenExpiry = Date.now() + ((resp.expires_in||3300)*1000 - 60000);
+              gDriveConnected = true;
+              resolve(gDriveToken);
+            } else {
+              reject(new Error('Não recebi um token de acesso do Google.'));
+            }
+          },
+          error_callback: (err)=> reject(err && err.message ? err : new Error('Falha na autenticação do Google.')),
+        });
+        client.requestAccessToken(promptOption ? { prompt: promptOption } : {});
+      }catch(e){ reject(e); }
+    });
+  }
+
+  async function ensureDriveToken(){
+    if (gDriveToken && Date.now() < gDriveTokenExpiry) return gDriveToken;
+    return requestDriveToken('');
+  }
+
+  async function ensureDriveFolder(token){
+    if (gDriveFolderId) return gDriveFolderId;
+    const q = encodeURIComponent("name='Photobooth' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+    const res = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', {
+      headers:{ Authorization:'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (data.files && data.files.length){
+      gDriveFolderId = data.files[0].id;
+    } else {
+      const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method:'POST',
+        headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' },
+        body: JSON.stringify({ name:'Photobooth', mimeType:'application/vnd.google-apps.folder' })
+      });
+      const created = await createRes.json();
+      gDriveFolderId = created.id;
+    }
+    localStorage.setItem('gDriveFolderId', gDriveFolderId);
+    return gDriveFolderId;
+  }
+
+  // Sobe a foto CRUA (sem moldura, sem dithering) e devolve um link
+  // público (qualquer pessoa com o link consegue ver) pro QR code.
+  async function uploadPhotoToDrive(canvas){
+    const token = await ensureDriveToken();
+    const folderId = await ensureDriveFolder(token);
+    const blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
+    const metadata = { name:'photobooth-' + Date.now() + '.png', parents:[folderId] };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+    form.append('file', blob);
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+      method:'POST',
+      headers:{ Authorization:'Bearer ' + token },
+      body: form
+    });
+    if (!res.ok) throw new Error('Drive respondeu ' + res.status);
+    const data = await res.json();
+    try{
+      await fetch('https://www.googleapis.com/drive/v3/files/' + data.id + '/permissions', {
+        method:'POST',
+        headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' },
+        body: JSON.stringify({ role:'reader', type:'anyone' })
+      });
+    }catch(e){ /* mesmo sem isso, o dono ainda acessa pelo Drive normalmente */ }
+    return data.webViewLink || ('https://drive.google.com/file/d/' + data.id + '/view');
+  }
+
+  connectDriveBtn.addEventListener('click', async ()=>{
+    settings.gClientId = gClientIdInput.value.trim();
+    if (!settings.gClientId){ alert('Cole o Google Client ID antes de conectar.'); return; }
+    localStorage.setItem('gClientId', settings.gClientId);
+    setDriveConnectStatus('Conectando…');
+    try{
+      await requestDriveToken();
+      await ensureDriveFolder(gDriveToken);
+      setDriveConnectStatus('Conectado — salvando na pasta "Photobooth" do seu Drive ✅');
+    }catch(err){
+      gDriveConnected = false;
+      setDriveConnectStatus('Falha: ' + (err && err.message ? err.message : err));
+    }
+  });
+
+  /* ============================================================
+     LIGAÇÕES DE UI
+     ============================================================ */
+  shutter.addEventListener('click', startSession);
+
+  gearBtn.addEventListener('click', ()=> settingsPanel.classList.remove('hidden'));
+  closeSettingsBtn.addEventListener('click', ()=> settingsPanel.classList.add('hidden'));
+  btPill.addEventListener('click', ()=> settingsPanel.classList.remove('hidden'));
+  connectBtn.addEventListener('click', connectPrinter);
+
+  paperWidthInput.addEventListener('change', ()=>{
+    let v = parseInt(paperWidthInput.value, 10) || 384;
+    v = Math.max(128, Math.min(960, Math.round(v/8)*8));
+    paperWidthInput.value = v;
+    settings.paperWidth = v;
+  });
+
+  qualitySeg.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      qualitySeg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      settings.quality = parseInt(btn.dataset.v, 10);
+    });
+  });
+
+  soundSwitch.addEventListener('click', ()=>{
+    settings.sound = !settings.sound;
+    soundSwitch.classList.toggle('on', settings.sound);
+  });
+  cameraSwitch.addEventListener('click', ()=>{
+    settings.frontCamera = !settings.frontCamera;
+    cameraSwitch.classList.toggle('on', settings.frontCamera);
+    initCamera();
+  });
+
+  printBtn.addEventListener('click', async ()=>{
+    if (!lastRows) return;
+    try{
+      if (!btDevice) await connectPrinter();
+      if (!btDevice) return;
+      reviewStatus.innerHTML = '<p>Imprimindo…</p>';
+      await ensureConnected();
+      await doPrint(lastRows);
+      reviewStatus.innerHTML = '<p>Impressa! 🎉</p>';
+    }catch(err){
+      reviewStatus.innerHTML = '<p>Falha ao imprimir: ' + (err && err.message ? err.message : err) + '</p>';
+    }
+  });
+
+  downloadBtn.addEventListener('click', ()=>{
+    const a = document.createElement('a');
+    a.href = stripPreview.src;
+    a.download = 'photobooth-' + Date.now() + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  newSessionBtn.addEventListener('click', ()=>{ showScreen(null); });
+
+  /* ============================================================
+     INÍCIO
+     ============================================================ */
+  initCamera();
+})();
+</script>
+</body>
+</html>
