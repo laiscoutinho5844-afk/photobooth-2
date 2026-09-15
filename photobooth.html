@@ -11,6 +11,9 @@
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <title>fotasso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
@@ -62,7 +65,7 @@
     align-items:center; justify-content:center; padding:0 5vw;
   }
   #camFrame{
-    position:relative; width:90vw; aspect-ratio:899/673;
+    position:relative; height:min(84vh, 84vw/1.3358); aspect-ratio:899/673; width:auto;
     border-radius:22px; overflow:hidden; background:#000;
     box-shadow:0 8px 30px rgba(0,0,0,.12);
   }
@@ -74,7 +77,7 @@
   #countdownNum{
     position:absolute; inset:0; z-index:12;
     display:flex; align-items:center; justify-content:center;
-    font-size:26vw; font-weight:800; color:#fff;
+    font-size:24vmin; font-weight:800; color:#fff;
     text-shadow:0 6px 30px rgba(0,0,0,.55);
     opacity:0; transform:scale(.7);
     pointer-events:none;
@@ -156,7 +159,10 @@
       <span class="dot"></span>
       <span id="btPillText">Impressora não conectada</span>
     </button>
-    <button id="gearBtn" class="icon-btn">⚙️</button>
+    <div style="display:flex; gap:8px;">
+      <button id="fullscreenBtn" class="icon-btn" title="Tela cheia">⛶</button>
+      <button id="gearBtn" class="icon-btn">⚙️</button>
+    </div>
   </div>
 
   <div id="stage">
@@ -295,6 +301,10 @@
 
   const familyImg = new Image();
   familyImg.src = 'family-illustration.png';
+  if (document.fonts){
+    document.fonts.load('700 40px "Caveat"').catch(()=>{});
+    document.fonts.load('600 40px "Caveat"').catch(()=>{});
+  }
 
   /* ============================================================
      ESTADO
@@ -319,6 +329,7 @@
   const reviewStatus=$('reviewStatus');
   const btPill=$('btPill'), btPillText=$('btPillText'), connectBtn=$('connectBtn');
   const gearBtn=$('gearBtn'), settingsPanel=$('settings'), closeSettingsBtn=$('closeSettingsBtn');
+  const fullscreenBtn=$('fullscreenBtn');
   const paperWidthInput=$('paperWidthInput'), qualitySeg=$('qualitySeg');
   const soundSwitch=$('soundSwitch'), cameraSwitch=$('cameraSwitch');
   const gClientIdInput=$('gClientIdInput'), connectDriveBtn=$('connectDriveBtn'), driveConnectStatus=$('driveConnectStatus');
@@ -422,14 +433,16 @@
 
     ctx.fillStyle = '#000';
     ctx.textAlign = 'center';
-    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.font = '700 24px "Caveat", system-ui, sans-serif';
     ctx.fillText('Acesse sua', (TXT1.x0+TXT1.x1)/2, TXT1.y1);
     ctx.fillText('foto aqui', (TXT2.x0+TXT2.x1)/2, TXT2.y1);
 
     if (qrLink) drawQR(ctx, qrLink, QRB.x0, QRB.y0, QRB.x1-QRB.x0, QRB.y1-QRB.y0);
 
-    ctx.font = '600 20px system-ui, sans-serif';
-    ctx.fillText('____/____/____', (DATEL.x0+DATEL.x1)/2, DATEL.y1);
+    const now = new Date();
+    const dataStr = String(now.getDate()).padStart(2,'0') + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + now.getFullYear();
+    ctx.font = '700 26px "Caveat", system-ui, sans-serif';
+    ctx.fillText(dataStr, (DATEL.x0+DATEL.x1)/2, DATEL.y1);
 
     if (familyImg.complete && familyImg.naturalWidth){
       const iw = ILLB.x1-ILLB.x0, ih = ILLB.y1-ILLB.y0;
@@ -767,6 +780,16 @@
   /* ============================================================
      LIGAÇÕES DE UI
      ============================================================ */
+  function requestFullscreenOnce(){
+    try{
+      const el = document.documentElement;
+      if (!document.fullscreenElement && el.requestFullscreen){
+        el.requestFullscreen().catch(()=>{});
+      }
+    }catch(e){}
+  }
+  fullscreenBtn.addEventListener('click', requestFullscreenOnce);
+
   shutter.addEventListener('click', startSession);
 
   gearBtn.addEventListener('click', ()=> settingsPanel.classList.remove('hidden'));

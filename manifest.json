@@ -4,7 +4,7 @@
   "start_url": "./photobooth.html",
   "scope": "./",
   "display": "fullscreen",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "background_color": "#050505",
   "theme_color": "#050505",
   "icons": [
