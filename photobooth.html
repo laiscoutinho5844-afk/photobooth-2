@@ -302,6 +302,8 @@
     const c = document.createElement('canvas');
     c.width = targetW; c.height = targetH;
     const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     if (settings.frontCamera){ ctx.translate(targetW,0); ctx.scale(-1,1); }
     ctx.drawImage(video, sx,sy,sw,sh, 0,0,targetW,targetH);
     return c;
@@ -311,7 +313,10 @@
   function cropToPrintSize(photoCanvas){
     const c = document.createElement('canvas');
     c.width = PRINT_W; c.height = PRINT_H;
-    c.getContext('2d').drawImage(photoCanvas, 0, 0, PRINT_W, PRINT_H);
+    const cctx = c.getContext('2d');
+    cctx.imageSmoothingEnabled = true;
+    cctx.imageSmoothingQuality = 'high';
+    cctx.drawImage(photoCanvas, 0, 0, PRINT_W, PRINT_H);
     return c;
   }
 
@@ -341,6 +346,8 @@
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = scaledH; finalCanvas.height = scaledW;
     const ctx = finalCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#fff'; ctx.fillRect(0,0,finalCanvas.width, finalCanvas.height);
     ctx.save();
     ctx.translate(finalCanvas.width, 0);
