@@ -13,31 +13,19 @@
 <title>fotasso</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet" />
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
   :root{
-    --bg:#ffffff;
-    --ink:#171717;
-    --muted:#8c8c86;
-    --accent:#9eff1f;      /* verde da marca fotasso */
-    --accent-ink:#171717;
-    --surface:#f6f6f1;
-    --surface-2:#ecece4;
-    --ok:#2f9e44;
-    --warn:#c9740a;
-    --danger:#e5484d;
+    --bg:#ffffff; --ink:#171717; --muted:#8c8c86;
+    --accent:#9eff1f; --accent-ink:#171717;
+    --surface:#f6f6f1; --surface-2:#ecece4;
+    --ok:#2f9e44; --warn:#c9740a; --danger:#e5484d;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{
-    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
-    background:var(--bg); color:var(--ink);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  }
+  html,body{margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
   #app{position:fixed; inset:0; display:flex; flex-direction:column;}
 
-  /* ---------- topo ---------- */
   #topbar{
     position:absolute; top:0; left:0; right:0; z-index:20;
     display:flex; justify-content:space-between; align-items:center;
@@ -45,52 +33,38 @@
     pointer-events:none;
   }
   #topbar > *{pointer-events:auto;}
-  .pill{
-    display:flex; align-items:center; gap:6px;
-    background:var(--surface); border:1px solid var(--surface-2);
-    border-radius:999px; padding:7px 13px; font-size:12px; color:var(--muted);
-  }
+  .pill{display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--surface-2); border-radius:999px; padding:7px 13px; font-size:12px; color:var(--muted);}
   .pill.ok{color:var(--ok);}
   .pill.warn{color:var(--warn);}
   .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
-  .icon-btn{
-    width:36px;height:36px;border-radius:50%; border:1px solid var(--surface-2);
-    background:var(--surface); color:var(--ink);
-    display:flex; align-items:center; justify-content:center; font-size:16px;
-  }
+  .icon-btn{width:36px;height:36px;border-radius:50%; border:1px solid var(--surface-2); background:var(--surface); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:16px;}
 
-  /* ---------- palco / câmera ---------- */
-  #stage{
-    position:relative; flex:1; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; padding:0 5vw;
-  }
+  #stage{position:relative; flex:1; display:flex; align-items:center; justify-content:center; padding:0 5vw;}
   #camFrame{
     position:relative; height:min(84vh, 84vw/1.3358); aspect-ratio:899/673; width:auto;
     border-radius:22px; overflow:hidden; background:#000;
     box-shadow:0 8px 30px rgba(0,0,0,.12);
   }
-  video{
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-    transform:scaleX(-1);
-  }
+  video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);}
   #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:15;}
   #countdownNum{
-    position:absolute; inset:0; z-index:12;
-    display:flex; align-items:center; justify-content:center;
-    font-size:24vmin; font-weight:800; color:#fff;
-    text-shadow:0 6px 30px rgba(0,0,0,.55);
-    opacity:0; transform:scale(.7);
-    pointer-events:none;
+    position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center;
+    font-size:24vmin; font-weight:800; color:#fff; text-shadow:0 6px 30px rgba(0,0,0,.55);
+    opacity:0; transform:scale(.7); pointer-events:none;
   }
   #logoPill{
     position:absolute; z-index:14; top:10px; left:50%; transform:translateX(-50%);
-    background:#fff; border-radius:999px; padding:5px 14px;
-    box-shadow:0 3px 12px rgba(0,0,0,.18);
+    background:#fff; border-radius:999px; padding:5px 14px; box-shadow:0 3px 12px rgba(0,0,0,.18);
     display:flex; align-items:center;
   }
   #logoPill img{height:20px; width:auto; display:block;}
+  #toast{
+    position:absolute; z-index:16; bottom:16px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,.74); color:#fff; padding:9px 18px; border-radius:999px;
+    font-size:13px; opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap;
+  }
+  #toast.show{opacity:1;}
 
-  /* ---------- botão obturador (estrela) ---------- */
   #shutter{
     position:fixed; z-index:20; right:3.2vw; top:50%; transform:translateY(-50%);
     width:74px; height:74px; background:var(--ink); border:none;
@@ -99,51 +73,24 @@
   #shutter:active{transform:translateY(-50%) scale(.92);}
   #shutter[disabled]{opacity:.4;}
 
-  /* ---------- telas auxiliares ---------- */
-  .screen{
-    position:absolute; inset:0; z-index:30;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:var(--bg); padding:24px; text-align:center; gap:16px;
-  }
+  .screen{position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg); padding:24px; text-align:center; gap:16px;}
   .hidden{display:none !important;}
   h1{font-size:19px; font-weight:700; margin:0;}
   p{color:var(--muted); font-size:14px; line-height:1.5; margin:0; max-width:320px;}
-
-  .btn{
-    appearance:none; border:none; border-radius:14px; padding:14px 22px;
-    font-size:15px; font-weight:700; color:var(--accent-ink); background:var(--accent);
-    min-width:220px;
-  }
+  .btn{appearance:none; border:none; border-radius:14px; padding:14px 22px; font-size:15px; font-weight:700; color:var(--accent-ink); background:var(--accent); min-width:220px;}
   .btn:active{transform:scale(.97);}
   .btn.secondary{background:var(--surface); color:var(--ink); border:1px solid var(--surface-2);}
-  .btn.ghost{background:transparent; color:var(--muted); border:1px solid var(--surface-2);}
   .btn[disabled]{opacity:.5;}
 
-  #stripPreview{max-width:82vw; max-height:52vh; border-radius:10px; box-shadow:0 10px 34px rgba(0,0,0,.16); background:#fff;}
-
-  .progressBar{width:240px; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
-  .progressBar > div{height:100%; width:0%; background:var(--accent); transition:width .15s;}
-
-  /* ---------- settings ---------- */
   #settings{position:absolute; inset:0; z-index:40; background:rgba(0,0,0,.35); display:flex; align-items:flex-end;}
   #settings.hidden{display:none;}
-  #settingsCard{
-    width:100%; background:var(--bg); border-radius:20px 20px 0 0;
-    padding:22px 20px calc(env(safe-area-inset-bottom,0px) + 22px); max-height:80vh; overflow:auto;
-    box-shadow:0 -8px 30px rgba(0,0,0,.15);
-  }
+  #settingsCard{width:100%; background:var(--bg); border-radius:20px 20px 0 0; padding:22px 20px calc(env(safe-area-inset-bottom,0px) + 22px); max-height:80vh; overflow:auto; box-shadow:0 -8px 30px rgba(0,0,0,.15);}
   .field{margin-bottom:18px; text-align:left;}
   .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:8px;}
   .segmented{display:flex; gap:8px;}
-  .segmented button{
-    flex:1; padding:10px; border-radius:10px; border:1px solid var(--surface-2);
-    background:var(--surface); color:var(--muted); font-size:13px;
-  }
+  .segmented button{flex:1; padding:10px; border-radius:10px; border:1px solid var(--surface-2); background:var(--surface); color:var(--muted); font-size:13px;}
   .segmented button.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
-  input[type=number], input[type=text]{
-    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--surface-2);
-    background:var(--surface); color:var(--ink); font-size:15px;
-  }
+  input[type=number], input[type=text]{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--surface-2); background:var(--surface); color:var(--ink); font-size:15px;}
   .row{display:flex; align-items:center; justify-content:space-between;}
   .switch{width:46px; height:26px; border-radius:999px; background:var(--surface-2); position:relative; border:1px solid var(--surface-2);}
   .switch.on{background:var(--accent);}
@@ -155,10 +102,7 @@
 <div id="app">
 
   <div id="topbar">
-    <button id="btPill" class="pill warn">
-      <span class="dot"></span>
-      <span id="btPillText">Impressora não conectada</span>
-    </button>
+    <button id="btPill" class="pill warn"><span class="dot"></span><span id="btPillText">Impressora não conectada</span></button>
     <div style="display:flex; gap:8px;">
       <button id="fullscreenBtn" class="icon-btn" title="Tela cheia">⛶</button>
       <button id="gearBtn" class="icon-btn">⚙️</button>
@@ -171,36 +115,18 @@
       <div id="flash"></div>
       <div id="countdownNum"></div>
       <div id="logoPill"><img src="logo-fotasso.png" alt="fotasso" /></div>
+      <div id="toast"></div>
     </div>
   </div>
 
   <button id="shutter" aria-label="Iniciar"></button>
 
-  <!-- tela: câmera indisponível -->
   <div id="screenCamError" class="screen hidden">
     <h1>Não consegui acessar a câmera</h1>
     <p id="camErrorMsg">Verifique se você permitiu o acesso à câmera e se está abrindo esta página pelo Chrome.</p>
     <button class="btn" onclick="initCamera()">Tentar de novo</button>
   </div>
 
-  <!-- tela: processando -->
-  <div id="screenProcessing" class="screen hidden">
-    <h1>Revelando sua foto…</h1>
-    <div class="progressBar"><div id="processingBar"></div></div>
-  </div>
-
-  <!-- tela: revisão / impressão -->
-  <div id="screenReview" class="screen hidden">
-    <img id="stripPreview" alt="Foto" />
-    <div id="reviewStatus"><p>Pronta!</p></div>
-    <div id="driveStatus"></div>
-    <div class="progressBar hidden" id="printProgressWrap"><div id="printProgressBar"></div></div>
-    <button id="printBtn" class="btn">🖨️ Imprimir</button>
-    <button id="downloadBtn" class="btn secondary">⬇️ Baixar imagem</button>
-    <button id="newSessionBtn" class="btn ghost">Nova sessão</button>
-  </div>
-
-  <!-- settings -->
   <div id="settings" class="hidden">
     <div id="settingsCard">
       <h1 style="margin-bottom:18px;">Ajustes</h1>
@@ -257,9 +183,7 @@
 
   /* ============================================================
      PROTOCOLO BLUETOOTH (impressoras "cat printer" / GB0x / MX0x)
-     Baseado em engenharia reversa pública do protocolo usado pelo
-     app iPrint com esse chip. Pacote:
-     [0x51,0x78, CMD, 0x00, lenLo, lenHi, ...dados, crc8(dados), 0xFF]
+     Pacote: [0x51,0x78, CMD, 0x00, lenLo, lenHi, ...dados, crc8, 0xFF]
      ============================================================ */
   const SERVICE_UUID = '0000ae30-0000-1000-8000-00805f9b34fb';
   const CHAR_WRITE_UUID = '0000ae01-0000-1000-8000-00805f9b34fb';
@@ -270,9 +194,7 @@
     let crc = 0;
     for (const b of bytes){
       crc ^= b;
-      for (let i=0;i<8;i++){
-        crc = (crc & 0x80) ? ((crc<<1)^0x07) & 0xFF : (crc<<1) & 0xFF;
-      }
+      for (let i=0;i<8;i++) crc = (crc & 0x80) ? ((crc<<1)^0x07) & 0xFF : (crc<<1) & 0xFF;
     }
     return crc & 0xFF;
   }
@@ -284,27 +206,13 @@
   const sleep = (ms) => new Promise(r=>setTimeout(r,ms));
 
   /* ============================================================
-     LAYOUT DE IMPRESSÃO (medidas exatas tiradas do mockup do
-     usuário, tela de 1181x673px representando um cartão de
-     90 x 57mm: foto crua à esquerda, QR + texto + ilustração
-     à direita)
+     FOTO / IMPRESSÃO — só a foto crua + data no canto
      ============================================================ */
-  const DESIGN_W = 1181, DESIGN_H = 673;
-  const PHOTO_X1 = 899;
-  const PHOTO_ASPECT = PHOTO_X1 / DESIGN_H;
-  const TXT1 = {x0:965,x1:1104,y0:68,y1:86};
-  const TXT2 = {x0:981,x1:1096,y0:103,y1:131};
-  const QRB  = {x0:962,x1:1120,y0:151,y1:308};
-  const DATEL= {x0:951,x1:1128,y0:532,y1:561};
-  const ILLB = {x0:933,x1:1150,y0:573,y1:660};
+  const PRINT_W = 899, PRINT_H = 673;      // mesmo enquadramento da prévia da câmera
+  const PHOTO_ASPECT = PRINT_W / PRINT_H;
   const CAPTURE_W = 1348, CAPTURE_H = Math.round(CAPTURE_W/PHOTO_ASPECT);
 
-  const familyImg = new Image();
-  familyImg.src = 'family-illustration.png';
-  if (document.fonts){
-    document.fonts.load('700 40px "Caveat"').catch(()=>{});
-    document.fonts.load('600 40px "Caveat"').catch(()=>{});
-  }
+  if (document.fonts) document.fonts.load('700 40px "Caveat"').catch(()=>{});
 
   /* ============================================================
      ESTADO
@@ -312,47 +220,47 @@
   const settings = { paperWidth:384, quality:51, sound:true, frontCamera:true, gClientId: localStorage.getItem('gClientId') || '' };
   const state = { busy:false, stream:null };
   let btDevice=null, btServer=null, writeChar=null;
-  let lastRows=null;
-  let gDriveToken=null, gDriveTokenExpiry=0, gDriveFolderId=localStorage.getItem('gDriveFolderId') || null, gDriveConnected=false;
+  let gDriveToken=null, gDriveTokenExpiry=0, gDriveFolderId=localStorage.getItem('gDriveFolderId') || null;
 
   /* ============================================================
      ELEMENTOS
      ============================================================ */
   const $ = (id)=>document.getElementById(id);
-  const video=$('video'), flashEl=$('flash'), countdownNum=$('countdownNum');
+  const video=$('video'), flashEl=$('flash'), countdownNum=$('countdownNum'), toast=$('toast');
   const shutter=$('shutter');
   const screenCamError=$('screenCamError'), camErrorMsg=$('camErrorMsg');
-  const screenProcessing=$('screenProcessing'), processingBar=$('processingBar');
-  const screenReview=$('screenReview'), stripPreview=$('stripPreview');
-  const printBtn=$('printBtn'), downloadBtn=$('downloadBtn'), newSessionBtn=$('newSessionBtn');
-  const printProgressWrap=$('printProgressWrap'), printProgressBar=$('printProgressBar');
-  const reviewStatus=$('reviewStatus');
   const btPill=$('btPill'), btPillText=$('btPillText'), connectBtn=$('connectBtn');
   const gearBtn=$('gearBtn'), settingsPanel=$('settings'), closeSettingsBtn=$('closeSettingsBtn');
   const fullscreenBtn=$('fullscreenBtn');
   const paperWidthInput=$('paperWidthInput'), qualitySeg=$('qualitySeg');
   const soundSwitch=$('soundSwitch'), cameraSwitch=$('cameraSwitch');
   const gClientIdInput=$('gClientIdInput'), connectDriveBtn=$('connectDriveBtn'), driveConnectStatus=$('driveConnectStatus');
-  const driveStatus=$('driveStatus');
   gClientIdInput.value = settings.gClientId;
 
-  function showScreen(el){
-    [screenCamError,screenProcessing,screenReview].forEach(s=>s.classList.add('hidden'));
-    if (el) el.classList.remove('hidden');
+  /* ============================================================
+     TOAST (status rapido, sem sair da camera)
+     ============================================================ */
+  let toastTimer=null;
+  function setToastText(text){
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+  }
+  function showToast(text, ms){
+    setToastText(text);
+    toastTimer = setTimeout(()=> toast.classList.remove('show'), ms||2200);
   }
 
   /* ============================================================
-     ÁUDIO (bipes sintetizados, sem depender de arquivos externos)
+     ÁUDIO
      ============================================================ */
   let audioCtx=null;
   function beep(freq, dur){
     if (!settings.sound) return;
     try{
       audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.frequency.value = freq;
-      osc.type = 'sine';
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.frequency.value = freq; osc.type = 'sine';
       gain.gain.setValueAtTime(.18, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur/1000);
       osc.connect(gain).connect(audioCtx.destination);
@@ -364,7 +272,7 @@
      CÂMERA
      ============================================================ */
   window.initCamera = async function initCamera(){
-    showScreen(null);
+    screenCamError.classList.add('hidden');
     try{
       if (state.stream) state.stream.getTracks().forEach(t=>t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -377,12 +285,12 @@
       await video.play().catch(()=>{});
     }catch(err){
       camErrorMsg.textContent = 'Verifique se você permitiu o acesso à câmera e se está abrindo esta página pelo Chrome. (' + (err && err.message ? err.message : err) + ')';
-      showScreen(screenCamError);
+      screenCamError.classList.remove('hidden');
     }
   };
 
   /* ============================================================
-     CAPTURA
+     CAPTURA + IMPRESSÃO
      ============================================================ */
   function captureFrame(targetW, targetH){
     const vw = video.videoWidth, vh = video.videoHeight;
@@ -394,82 +302,50 @@
     const c = document.createElement('canvas');
     c.width = targetW; c.height = targetH;
     const ctx = c.getContext('2d');
-    if (settings.frontCamera){
-      ctx.translate(targetW,0); ctx.scale(-1,1); // espelha p/ bater com a prévia
-    }
+    if (settings.frontCamera){ ctx.translate(targetW,0); ctx.scale(-1,1); }
     ctx.drawImage(video, sx,sy,sw,sh, 0,0,targetW,targetH);
     return c;
   }
 
-  // Gera o QR code direto no canvas (biblioteca kazuhikoarase/qrcode-generator)
-  function drawQR(ctx, text, x, y, w, h){
-    if (!window.qrcode) return;
-    try{
-      const qr = qrcode(0, 'M');
-      qr.addData(text);
-      qr.make();
-      const count = qr.getModuleCount();
-      const cell = Math.floor(Math.min(w,h)/count);
-      const qrPx = cell*count;
-      const offsetX = x + (w-qrPx)/2, offsetY = y + (h-qrPx)/2;
-      ctx.fillStyle = '#000';
-      for (let r=0;r<count;r++){
-        for (let c=0;c<count;c++){
-          if (qr.isDark(r,c)) ctx.fillRect(offsetX+c*cell, offsetY+r*cell, cell, cell);
-        }
-      }
-    }catch(e){ console.warn('QR falhou', e); }
-  }
-
-  // Monta o layout final (foto crua + texto + QR + ilustração), no
-  // tamanho nativo do mockup (1181x673) — fácil de conferir na tela.
-  function buildDesignCanvas(photoCanvas, qrLink){
+  // foto crua (para o Drive) — sem nenhum texto ou moldura
+  function cropToPrintSize(photoCanvas){
     const c = document.createElement('canvas');
-    c.width = DESIGN_W; c.height = DESIGN_H;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,DESIGN_W,DESIGN_H);
-
-    ctx.drawImage(photoCanvas, 0, 0, PHOTO_X1, DESIGN_H);
-
-    ctx.fillStyle = '#000';
-    ctx.textAlign = 'center';
-    ctx.font = '700 24px "Caveat", system-ui, sans-serif';
-    ctx.fillText('Acesse sua', (TXT1.x0+TXT1.x1)/2, TXT1.y1);
-    ctx.fillText('foto aqui', (TXT2.x0+TXT2.x1)/2, TXT2.y1);
-
-    if (qrLink) drawQR(ctx, qrLink, QRB.x0, QRB.y0, QRB.x1-QRB.x0, QRB.y1-QRB.y0);
-
-    const now = new Date();
-    const dataStr = String(now.getDate()).padStart(2,'0') + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + now.getFullYear();
-    ctx.font = '700 26px "Caveat", system-ui, sans-serif';
-    ctx.fillText(dataStr, (DATEL.x0+DATEL.x1)/2, DATEL.y1);
-
-    if (familyImg.complete && familyImg.naturalWidth){
-      const iw = ILLB.x1-ILLB.x0, ih = ILLB.y1-ILLB.y0;
-      const scale = Math.min(iw/familyImg.naturalWidth, ih/familyImg.naturalHeight);
-      const dw = familyImg.naturalWidth*scale, dh = familyImg.naturalHeight*scale;
-      const dx = ILLB.x0 + (iw-dw)/2, dy = ILLB.y0 + (ih-dh)/2;
-      ctx.drawImage(familyImg, dx, dy, dw, dh);
-    }
+    c.width = PRINT_W; c.height = PRINT_H;
+    c.getContext('2d').drawImage(photoCanvas, 0, 0, PRINT_W, PRINT_H);
     return c;
   }
 
-  // O cabeçote da impressora é FIXO em 384px (57mm); o design é
-  // "deitado" (90mm de comprimento x 57mm de largura), então giramos
-  // 90° e escalamos pra caber no rolo antes de imprimir.
-  function buildPrintRaster(designCanvas, paperWidthPx){
-    const scale = paperWidthPx / designCanvas.height;
-    const scaledW = Math.round(designCanvas.width*scale);
+  // foto + data no canto, só isso (pro impresso)
+  function buildPrintCanvas(photoCanvas){
+    const c = cropToPrintSize(photoCanvas);
+    const ctx = c.getContext('2d');
+    const now = new Date();
+    const dataStr = String(now.getDate()).padStart(2,'0') + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + now.getFullYear();
+    ctx.font = '700 30px "Caveat", system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.lineWidth = 7;
+    ctx.strokeText(dataStr, PRINT_W-18, PRINT_H-16);
+    ctx.fillStyle = '#000';
+    ctx.fillText(dataStr, PRINT_W-18, PRINT_H-16);
+    return c;
+  }
+
+  // O cabeçote imprime numa largura FIXA (384px = 57mm); a foto é
+  // "deitada", então giramos 90° e escalamos pra caber no rolo.
+  function buildPrintRaster(printCanvas, paperWidthPx){
+    const scale = paperWidthPx / printCanvas.height;
+    const scaledW = Math.round(printCanvas.width*scale);
     const scaledH = paperWidthPx;
     const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = scaledH;
-    finalCanvas.height = scaledW;
+    finalCanvas.width = scaledH; finalCanvas.height = scaledW;
     const ctx = finalCanvas.getContext('2d');
     ctx.fillStyle = '#fff'; ctx.fillRect(0,0,finalCanvas.width, finalCanvas.height);
     ctx.save();
     ctx.translate(finalCanvas.width, 0);
     ctx.rotate(Math.PI/2);
-    ctx.drawImage(designCanvas, 0, 0, scaledW, scaledH);
+    ctx.drawImage(printCanvas, 0, 0, scaledW, scaledH);
     ctx.restore();
     return finalCanvas;
   }
@@ -486,8 +362,7 @@
     }
     for (let y=0;y<h;y++){
       for (let x=0;x<w;x++){
-        const idx = y*w+x;
-        const old = gray[idx];
+        const idx = y*w+x, old = gray[idx];
         const nv = old < 128 ? 0 : 255;
         const err = old - nv;
         gray[idx] = nv;
@@ -507,8 +382,7 @@
         let byte=0;
         for (let bit=0; bit<8; bit++){
           const x = bx*8+bit;
-          const black = gray[y*w+x] < 128 ? 1:0;
-          byte |= black << (7-bit);
+          byte |= (gray[y*w+x] < 128 ? 1:0) << (7-bit);
         }
         row[bx]=byte;
       }
@@ -517,9 +391,6 @@
     return rows;
   }
 
-  /* ============================================================
-     SEQUÊNCIA DE CAPTURA (1 foto)
-     ============================================================ */
   async function runCountdown(seconds){
     for (let s=seconds; s>=1; s--){
       countdownNum.textContent = s;
@@ -552,50 +423,33 @@
     const rawPhoto = captureFrame(CAPTURE_W, CAPTURE_H);
     doFlash();
     beep(1300, 70);
-    await sleep(500);
 
-    showScreen(screenProcessing);
-    processingBar.style.width = '20%';
-    await sleep(20);
+    // Drive roda em paralelo, sem travar a impressão nem trocar de tela
+    const drivePromise = settings.gClientId
+      ? uploadPhotoToDrive(cropToPrintSize(rawPhoto)).then(()=>true).catch(()=>false)
+      : Promise.resolve(null);
 
-    let driveLink = null;
-    if (settings.gClientId){
-      try{ driveLink = await uploadPhotoToDrive(rawPhoto); }
-      catch(e){ driveLink = null; }
-    }
-    processingBar.style.width = '55%';
-    await sleep(20);
-
-    const design = buildDesignCanvas(rawPhoto, driveLink);
-    processingBar.style.width = '78%';
-    await sleep(20);
-
-    const raster = buildPrintRaster(design, settings.paperWidth);
+    setToastText('Preparando…');
+    const printCanvas = buildPrintCanvas(rawPhoto);
+    const raster = buildPrintRaster(printCanvas, settings.paperWidth);
     const rows = toBitmapRows(raster, settings.paperWidth);
-    lastRows = rows;
-    processingBar.style.width = '100%';
-    await sleep(150);
-
-    stripPreview.src = design.toDataURL('image/png');
-    printProgressWrap.classList.add('hidden');
-    printProgressBar.style.width='0%';
-    driveStatus.innerHTML = settings.gClientId
-      ? (driveLink ? '<p>Salva no Drive ✅</p>' : '<p>Não consegui salvar no Drive agora.</p>')
-      : '';
-    showScreen(screenReview);
 
     if (btDevice){
       try{
         await ensureConnected();
-        reviewStatus.innerHTML = '<p>Imprimindo automaticamente…</p>';
         await doPrint(rows);
-        reviewStatus.innerHTML = '<p>Impressa! 🎉</p>';
+        setToastText('Impressa! 🎉');
       }catch(err){
-        reviewStatus.innerHTML = '<p>Não consegui imprimir automaticamente. Toque em Imprimir para tentar de novo.</p>';
+        setToastText('Falha ao imprimir 😕');
       }
     } else {
-      reviewStatus.innerHTML = '<p>Impressora não conectada — toque em Imprimir.</p>';
+      setToastText('Impressora não conectada');
     }
+
+    const driveOk = await drivePromise;
+    if (driveOk === true) setToastText((toast.textContent) + ' · Salva no Drive ✅');
+    else if (driveOk === false) setToastText((toast.textContent) + ' · Drive falhou');
+    showToast(toast.textContent, 2800);
 
     state.busy = false;
     shutter.disabled = false;
@@ -619,7 +473,7 @@
       try{
         const notifyChar = await service.getCharacteristic(CHAR_NOTIFY_UUID);
         await notifyChar.startNotifications();
-      }catch(e){ /* opcional, ignora se não existir */ }
+      }catch(e){}
     }
     setBtStatus('ok', btDevice.name || 'Impressora conectada');
   }
@@ -630,63 +484,49 @@
       return;
     }
     try{
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices:true,
-        optionalServices:[SERVICE_UUID]
-      });
+      const device = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:[SERVICE_UUID] });
       btDevice = device;
-      device.addEventListener('gattserverdisconnected', ()=>{
-        setBtStatus('warn', 'Impressora desconectada');
-      });
+      device.addEventListener('gattserverdisconnected', ()=> setBtStatus('warn', 'Impressora desconectada'));
       await ensureConnected();
     }catch(err){
-      if (err && err.name !== 'NotFoundError'){
-        alert('Não consegui conectar: ' + (err && err.message ? err.message : err));
-      }
+      if (err && err.name !== 'NotFoundError') alert('Não consegui conectar: ' + (err && err.message ? err.message : err));
     }
   }
 
   async function sendPacket(bytes){
-    if (writeChar.writeValueWithoutResponse){
-      await writeChar.writeValueWithoutResponse(bytes);
-    } else {
-      await writeChar.writeValue(bytes);
-    }
+    if (writeChar.writeValueWithoutResponse) await writeChar.writeValueWithoutResponse(bytes);
+    else await writeChar.writeValue(bytes);
   }
 
+  // linhas mais espaçadas: evita corromper/"falhar" a imagem por
+  // sobrecarregar o buffer da impressora
   async function doPrint(rows){
-    printProgressWrap.classList.remove('hidden');
-    printBtn.disabled = true;
     await sendPacket(buildPacket(CMD.SET_QUALITY, [settings.quality]));
     await sleep(30);
     await sendPacket(buildPacket(CMD.SET_ENERGY, [0xE0, 0x2E]));
     await sleep(30);
     await sendPacket(buildPacket(CMD.SET_MODE, [0x00]));
-    await sleep(30);
+    await sleep(40);
     for (let i=0;i<rows.length;i++){
       await sendPacket(buildPacket(CMD.DRAW_LINE, Array.from(rows[i])));
-      await sleep(16);
-      printProgressBar.style.width = Math.round(((i+1)/rows.length)*100) + '%';
+      await sleep(26);
+      if (i % 40 === 0) await sleep(30); // respiro extra pro buffer a cada ~40 linhas
+      setToastText('Imprimindo… ' + Math.round(((i+1)/rows.length)*100) + '%');
     }
     await sendPacket(buildPacket(CMD.FEED_PAPER, [0x80, 0x00]));
-    printBtn.disabled = false;
   }
 
   /* ============================================================
-     GOOGLE DRIVE (salva a versão digital crua + gera link pro QR)
+     GOOGLE DRIVE
      ============================================================ */
   function setDriveConnectStatus(text){ driveConnectStatus.textContent = text; }
 
   function requestDriveToken(promptOption){
     return new Promise((resolve, reject)=>{
       if (!window.google || !google.accounts || !google.accounts.oauth2){
-        reject(new Error('Google Identity Services ainda não carregou. Verifique sua internet e tente de novo.'));
-        return;
+        reject(new Error('Google Identity Services ainda não carregou.')); return;
       }
-      if (!settings.gClientId){
-        reject(new Error('Cole o Google Client ID nos ajustes primeiro.'));
-        return;
-      }
+      if (!settings.gClientId){ reject(new Error('Cole o Google Client ID nos ajustes primeiro.')); return; }
       try{
         const client = google.accounts.oauth2.initTokenClient({
           client_id: settings.gClientId,
@@ -695,11 +535,8 @@
             if (resp && resp.access_token){
               gDriveToken = resp.access_token;
               gDriveTokenExpiry = Date.now() + ((resp.expires_in||3300)*1000 - 60000);
-              gDriveConnected = true;
               resolve(gDriveToken);
-            } else {
-              reject(new Error('Não recebi um token de acesso do Google.'));
-            }
+            } else reject(new Error('Não recebi um token de acesso do Google.'));
           },
           error_callback: (err)=> reject(err && err.message ? err : new Error('Falha na autenticação do Google.')),
         });
@@ -716,9 +553,7 @@
   async function ensureDriveFolder(token){
     if (gDriveFolderId) return gDriveFolderId;
     const q = encodeURIComponent("name='Photobooth' and mimeType='application/vnd.google-apps.folder' and trashed=false");
-    const res = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', {
-      headers:{ Authorization:'Bearer ' + token }
-    });
+    const res = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', { headers:{ Authorization:'Bearer ' + token } });
     const data = await res.json();
     if (data.files && data.files.length){
       gDriveFolderId = data.files[0].id;
@@ -728,15 +563,13 @@
         headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' },
         body: JSON.stringify({ name:'Photobooth', mimeType:'application/vnd.google-apps.folder' })
       });
-      const created = await createRes.json();
-      gDriveFolderId = created.id;
+      gDriveFolderId = (await createRes.json()).id;
     }
     localStorage.setItem('gDriveFolderId', gDriveFolderId);
     return gDriveFolderId;
   }
 
-  // Sobe a foto CRUA (sem moldura, sem dithering) e devolve um link
-  // público (qualquer pessoa com o link consegue ver) pro QR code.
+  // sobe a foto crua (sem data, sem moldura) — cópia digital limpa
   async function uploadPhotoToDrive(canvas){
     const token = await ensureDriveToken();
     const folderId = await ensureDriveFolder(token);
@@ -745,21 +578,11 @@
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
     form.append('file', blob);
-    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
-      method:'POST',
-      headers:{ Authorization:'Bearer ' + token },
-      body: form
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method:'POST', headers:{ Authorization:'Bearer ' + token }, body: form
     });
     if (!res.ok) throw new Error('Drive respondeu ' + res.status);
-    const data = await res.json();
-    try{
-      await fetch('https://www.googleapis.com/drive/v3/files/' + data.id + '/permissions', {
-        method:'POST',
-        headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' },
-        body: JSON.stringify({ role:'reader', type:'anyone' })
-      });
-    }catch(e){ /* mesmo sem isso, o dono ainda acessa pelo Drive normalmente */ }
-    return data.webViewLink || ('https://drive.google.com/file/d/' + data.id + '/view');
+    return res.json();
   }
 
   connectDriveBtn.addEventListener('click', async ()=>{
@@ -772,7 +595,6 @@
       await ensureDriveFolder(gDriveToken);
       setDriveConnectStatus('Conectado — salvando na pasta "Photobooth" do seu Drive ✅');
     }catch(err){
-      gDriveConnected = false;
       setDriveConnectStatus('Falha: ' + (err && err.message ? err.message : err));
     }
   });
@@ -783,15 +605,12 @@
   function requestFullscreenOnce(){
     try{
       const el = document.documentElement;
-      if (!document.fullscreenElement && el.requestFullscreen){
-        el.requestFullscreen().catch(()=>{});
-      }
+      if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(()=>{});
     }catch(e){}
   }
   fullscreenBtn.addEventListener('click', requestFullscreenOnce);
 
   shutter.addEventListener('click', startSession);
-
   gearBtn.addEventListener('click', ()=> settingsPanel.classList.remove('hidden'));
   closeSettingsBtn.addEventListener('click', ()=> settingsPanel.classList.add('hidden'));
   btPill.addEventListener('click', ()=> settingsPanel.classList.remove('hidden'));
@@ -821,29 +640,6 @@
     cameraSwitch.classList.toggle('on', settings.frontCamera);
     initCamera();
   });
-
-  printBtn.addEventListener('click', async ()=>{
-    if (!lastRows) return;
-    try{
-      if (!btDevice) await connectPrinter();
-      if (!btDevice) return;
-      reviewStatus.innerHTML = '<p>Imprimindo…</p>';
-      await ensureConnected();
-      await doPrint(lastRows);
-      reviewStatus.innerHTML = '<p>Impressa! 🎉</p>';
-    }catch(err){
-      reviewStatus.innerHTML = '<p>Falha ao imprimir: ' + (err && err.message ? err.message : err) + '</p>';
-    }
-  });
-
-  downloadBtn.addEventListener('click', ()=>{
-    const a = document.createElement('a');
-    a.href = stripPreview.src;
-    a.download = 'photobooth-' + Date.now() + '.png';
-    document.body.appendChild(a); a.click(); a.remove();
-  });
-
-  newSessionBtn.addEventListener('click', ()=>{ showScreen(null); });
 
   /* ============================================================
      INÍCIO
